@@ -1,0 +1,568 @@
+FIELD HERO — KALIBRACE OTÁZEK A ODPOVĚDÍ
+==========================================
+Export pro ruční validaci. U každé položky:
+  1) zkontroluj KONTEXT (sedí situace k reálnému D2D prodeji?)
+  2) z alternativ A/B/C/D vyber nejlepší, uprav ji, nebo napiš vlastní do TVOJE VOLBA
+Až budeš hotový, pošli soubor zpět a promítnu tvoje volby do field-hero.html
+(pole `model`/`tip` u odpovídající otázky) + spustím validátor a nasadím.
+
+Zdroj v kódu: ASSESS = field-hero.html:313, OBJ_LIB = field-hero.html:1930
+
+
+##########################################
+ČÁST 1 — VSTUPNÍ DIAGNOSTIKA (ASSESS, 3 otázky)
+##########################################
+
+=== 1.1 — Otvírák · Prvních 10 vteřin ===
+KONTEXT: Zazvoníš. Dveře se pootevřou: „Dobrý den… co si přejete?“ Muž ~45 si tě
+měří pohledem. Máš 10 vteřin.
+KONTEXT OK? [x] ano   [ ] ne — proč: ______________________________________
+
+PŮVODNÍ (v kódu):
+„Dobrý den, Novák, T-Mobile Osobně — tady průkaz. Jsem tu na základě oznámení
+ve vchodě: mám každému předat, na jaké výhody má nárok. Zdržím vás jen chvilku.“
+
+ALTERNATIVY:
+A) „Dobrý den, Petr Novák, T-Mobile Osobně, tady je můj průkaz. Chodím dnes
+   vaší ulicí kvůli optice, co se tu instaluje — zabere to jen chviličku, můžu?“
+B) „Dobrý den, promiňte že ruším — jsem Novák od T-Mobile, jsme dnes ve vašem
+   domě kvůli optickému připojení. Máte minutku, nebo se mám stavit jindy?“
+C) „Dobrý den, Novák, T-Mobile Osobně. Víte už, že se ve vašem domě spouští
+   optika? Mám pro vás 30 vteřin info, co z toho můžete mít.“
+D) „Dobrý den, Novák, T-Mobile — reaguji na oznámení, co visí ve vchodě.
+   Řeknu vám během chvilky, co přesně to pro vás znamená?“
+
+TVOJE VOLBA: A, B, C je ok
+
+
+=== 1.2 — Znalost Fiber (technický dotaz uprostřed rozhovoru) ===
+KONTEXT: Zákazník se ptá: „Jaký je vlastně rozdíl mezi optikou a tím, co mám
+teď přes vzduch?“ (rozhovor už běží, představení proběhlo dřív)
+KONTEXT OK? [X] ano   [ ] ne — proč: ale doplň že to je uprstřed hovoru
+
+PŮVODNÍ (v kódu):
+„Optika vede signál světlem až k vám domů — stabilita a odezva nezávisí na
+počasí ani na tom, kolik lidí je online. Kolik zařízení u vás běží najednou?“
+
+ALTERNATIVY:
+A) „Optika vede signál světlem přímo k vám domů, takže rychlost i stabilita
+   jsou stejné, ať je venku bouřka nebo večer, kdy je online celá ulice.
+   Kolik zařízení běžně používáte najednou?“
+B) „Zjednodušeně — drát vs. vzduch. Optika neztrácí signál kvůli počasí ani
+   sousedům na síti. Sledujete třeba video, nebo hrajete online?“
+C) „Hlavní rozdíl je spolehlivost — u signálu vzduchem kolísá rychlost podle
+   počtu uživatelů a počasí, optika ne. Pracuje nebo hraje u vás někdo z domova?“
+D) „Optika = světlo v kabelu až k vám, žádné rušení. Nejvíc to poznáte večer,
+   kdy je připojeno víc lidí najednou. Jak jste na tom teď vy?“
+
+TVOJE VOLBA: A, B, C
+
+
+=== 1.3 — Čtení prostředí / Discovery (uvnitř bytu) ===
+KONTEXT: Jsi uvnitř. Vidíš velkou TV, konzoli a dva notebooky. Co řekneš jako
+první? (dveře i představení proběhly dřív, tohle není nový kontakt)
+KONTEXT OK? [ x ano   [ ] ne — proč: ______________________________________
+
+PŮVODNÍ (v kódu):
+„Vidím, že u vás běží dost zařízení najednou. Jak zvládá připojení, když
+jste online všichni?“
+
+ALTERNATIVY:
+A) „Vidím, že tu máte pěkně vybavenou domácnost — televize, konzole,
+   notebooky. Jak to celé zvládá připojení, když jede všechno najednou?“
+B) „To je hezká sestava zařízení. Stává se vám někdy, že to sekne, když je
+   toho na síti víc?“
+C) „Vidím, kolik toho tu běží — televize, konzole, notebooky. Kolik lidí to
+   u vás doma reálně používá naráz?“
+D) „Pěkné zázemí. Řešíte někdy, že vám wifi nestíhá, když hrajete a zároveň
+   běží televize?“
+
+TVOJE VOLBA: A, B, D
+
+
+##########################################
+ČÁST 2 — DRIL NÁMITEK (OBJ_LIB, 24 položek)
+##########################################
+
+=== 2.0 — Loajalita ===
+KONTEXT: Cihlový dům, sobota 10:30. Muž ~50 v zahradním oblečení, klidný,
+nikam nespěchá.
+NÁMITKA: „Jsem spokojený se svým poskytovatelem.“
+KONTEXT OK? [x] ano   [ ] ne — proč: ______________________________________
+
+PŮVODNÍ: „Skvělé, věrnost oceňuji. Jaké speciální výhody vám za ni váš
+poskytovatel dal? U nás na věrnost slyšíme…“
+
+ALTERNATIVY:
+A) „To je fajn slyšet, spokojenost je základ. Co u nich nejvíc oceňujete —
+   cenu, rychlost, nebo servis?“
+B) „Rád to slyším. Jen ze zvědavosti — kdy jste naposledy porovnával, co za
+   ty peníze reálně dostáváte?“
+C) „Super, věrnost se cení. Mám ale jednu věc, co většina lidí ve vaší
+   pozici neví — dáte mi 30 vteřin?“
+
+TVOJE VOLBA: A, B
+
+
+=== 2.1 — Čas ===
+KONTEXT: Novostavba, všední den 17:50. Žena ~35 v kostýmku, klíče od auta
+v ruce, už je na odchodu.
+NÁMITKA: „Nemám čas, spěchám.“
+KONTEXT OK? [X] ano   [ ] ne — proč: ______________________________________
+
+PŮVODNÍ: „Chápu, zdržím vás maximálně 20 vteřin. Jen jedna věc o připojení
+v téhle ulici, kterou většina sousedů netuší.“
+
+ALTERNATIVY:
+A) „Jasně, žádný problém. Nechám vám vizitku a napíšu na ni jednu věc, co se
+   týká vašeho domu — kdy se vám líp ozvu, večer nebo ráno?“
+B) „Chápu, běžíte. Jen rychle — máte doma optiku, nebo pořád starou linku?“
+   (a podle odpovědi rovnou navrhne konkrétní termín)
+C) „Rozumím, teď ne. Kdy vás dneska nebo zítra nejmíň vyrušit na pár minut?“
+
+TVOJE VOLBA: A, C, B
+
+
+=== 2.2 — Únik ===
+KONTEXT: Kancelářský typ ~40, dveře otevírá jen napůl, zdvořilý úsměv —
+klasické slušné ukončení.
+NÁMITKA: „Pošlete mi to e-mailem.“
+KONTEXT OK? [ ] ano   [X] ne — proč: doplň do kontextu, co jsi mu už pověděl, aby šlo navázat
+
+PŮVODNÍ: „Rád pošlu. Ať tam nemáte balast — jde vám spíš o rychlost, nebo
+o televizi? A můžu se ve čtvrtek ozvat, jestli to dávalo smysl?“
+
+ALTERNATIVY:
+A) „Jasně, pošlu. Abych vám neposílal desetistránkový PDF — zajímá vás
+   spíš internet, nebo i televize?“
+B) „Můžu. Napíšu vám tam rovnou konkrétní cenu pro váš dům, ať se neztrácíte
+   v tabulkách. Jaký e-mail mám použít?“
+C) „Rád — a rovnou se zeptám, ať to není naprázdno: je u vás teď spíš
+   problém s rychlostí, nebo s cenou?“
+
+TVOJE VOLBA: A, C
+
+
+=== 2.3 — Cena ===
+KONTEXT: Panelák, muž ~45. Na cenu se zeptal dřív, než jsi dořekl pozdrav.
+NÁMITKA: „Kolik to stojí? … To je moc drahé.“
+KONTEXT OK? [X] ano   [ ] ne — proč: ______________________________________
+
+PŮVODNÍ: „Oceňuji, že to hlídáte z pohledu rozpočtu. Tady jde ale o jinou
+síť s jinou kvalitou — pojďme nejdřív srovnat, co za své peníze reálně
+dostáváte teď.“
+
+ALTERNATIVY:
+A) „Rozumím, cena hraje roli vždycky. Kolik teď platíte a za co konkrétně?
+   Ať vím, jestli vás vůbec můžu posunout k lepšímu.“
+B) „Chápu. Než řeknu číslo — zajímá vás spíš nejlevnější varianta, nebo
+   nejlepší poměr cena/výkon?“
+C) „Jasně, k ceně se dostaneme. Napřed ale — co vám na současném připojení
+   nejvíc vadí, nebo je spokojenost 100%?“
+
+TVOJE VOLBA: A, B, C
+
+
+=== 2.4 — Rozhodování ===
+KONTEXT: Rodinný dům, večer. Muž ~55, váhavý, během řeči se ohlíží do domu.
+NÁMITKA: „Musím se poradit s manželkou.“
+KONTEXT OK? [x] ano   [ ] ne — proč: ______________________________________
+
+PŮVODNÍ: „Výborně, oceňuji, že se nerozhodujete sám. Je partnerka teď doma?
+Můžeme jí zavolat? Pokud ne, kdy to spolu proberete?“
+
+ALTERNATIVY:
+A) „To je správně. Je doma? Klidně počkám, nebo se zeptám rovnou obou —
+   zabere to pět minut.“
+B) „Rozumím, velké rozhodnutí ať padne spolu. Co byste jí řekl, že tu dnes
+   bylo za nabídku? Pomůžu vám to shrnout na papír.“
+C) „Chápu. Kdy budete oba doma, abych se mohl stavit a probrat to s vámi
+   společně?“
+
+TVOJE VOLBA: A, B, C
+
+
+=== 2.5 — Nedůvěra ===
+KONTEXT: Panelák, na dveřích cedulka „Nevhazovat letáky“. Podrážděný tón od
+první vteřiny.
+NÁMITKA: „Už jste tu byli minulý měsíc.“
+KONTEXT OK? [x] ano   [ ] ne — proč: ______________________________________
+
+PŮVODNÍ: „Máte pravdu a omlouvám se. Jdu ale s jednou konkrétní novinkou,
+která od té doby platí pro váš dům — 30 vteřin?“
+
+ALTERNATIVY:
+A) „Omlouvám se za to obtěžování. Slibuju, dnes už naposledy — jen jedna
+   věc se od minule změnila a týká se přímo vás.“
+B) „Rozumím, že vás to štve. Nebudu se opakovat — řeknu vám jen, co se
+   změnilo, a jestli to nedává smysl, jdu dál.“
+C) „Chápu tu nedůvěru. Dám vám kontakt na sebe, ať příště víte, s kým
+   mluvíte, a klidně mě sám odmítnete, když nebude co řešit.“
+
+TVOJE VOLBA: C, B
+
+
+=== 2.6 — Potřeba (senior) ===
+KONTEXT: Starší dům, paní ~70, brýle na řetízku, přívětivá, ale opatrná.
+NÁMITKA: „Internet skoro nepoužívám.“
+KONTEXT OK? [x] ano   [ ] ne — proč: ______________________________________
+
+PŮVODNÍ: „A když k vám přijedou děti nebo vnoučata — funguje jim tu
+všechno? Často to řešíme právě kvůli návštěvám.“
+
+ALTERNATIVY:
+A) „To je v pořádku, spoustě lidí stačí málo. Voláte si někdy přes telefon
+   s rodinou na video? To bývá ten hlavní důvod, proč to lidé řeší.“
+B) „Rozumím. A televizi sledujete? I na tu se dnes připojení hodí, ať
+   neskáče obraz.“
+C) „Chápu, není potřeba nic složitého. Spíš se ptám, jestli vám doma
+   všechno funguje spolehlivě, i když nejste online typ.“
+
+TVOJE VOLBA: A, B, C
+
+
+=== 2.7 — Závazek ===
+KONTEXT: Bytovka, muž ~35, věcný, mluví rychle — tohle už evidentně řešil.
+NÁMITKA: „Mám smlouvu a pokutu za odchod.“
+KONTEXT OK? [x] ano   [ ] ne — proč: ______________________________________
+
+PŮVODNÍ: „Rozumím. Máte smlouvu na rodné číslo, nebo na IČO? Jestli jde
+o modem — můžete ho v klidu dosplácet a my vám u nás pronájem odpustíme.“
+
+ALTERNATIVY:
+A) „Jasně, to řešíme často. Kdy vám smlouva reálně končí? Můžeme se sejít
+   těsně před tím termínem, ať vás to nic nestojí.“
+B) „Rozumím. Co přesně by vás ta pokuta stála? Někdy se vyplatí přejít
+   i s ní, jindy počkáme — spočítejme si to spolu.“
+C) „Chápu, závazek je závazek. Dosplácíte ho v klidu a my mezitím
+   připravíme, co budete mít u nás — ať máte čas na rozmyšlenou.“
+
+TVOJE VOLBA: A, B, C
+
+
+=== 2.8 — Zkušenost ===
+KONTEXT: Muž ~50. Jakmile uviděl logo na vestě, ztvrdl mu výraz a založil
+ruce.
+NÁMITKA: „S vámi jsem měl špatnou zkušenost.“
+KONTEXT OK? [x] ano   [ ] ne — proč: ______________________________________
+
+PŮVODNÍ: „To mě velmi mrzí — můžu se zeptat, co konkrétně se stalo? …
+Rozumím. Neslibuji zázraky, ale ukážu vám písemně, co se od té doby
+změnilo.“
+
+ALTERNATIVY:
+A) „To mě mrzí, opravdu. Co se přesně stalo? Chci to slyšet, ne se
+   vymlouvat.“
+B) „Rozumím, že vám to nechuť nechalo. Nemusíte mi věřit na slovo — dám vám
+   kontakt, kde si vše ověříte, než se rozhodnete.“
+C) „To je mi líto slyšet. Nebudu předstírat, že se nic nestalo — řekněte mi
+   co, a já vám na rovinu řeknu, jestli se to teď dělá jinak, nebo ne.“
+
+TVOJE VOLBA: A, C
+
+
+=== 2.9 — Potřeba ===
+KONTEXT: Muž ~60, mávne rukou, ale dveře nechává pootevřené — není to
+tvrdé ne.
+NÁMITKA: „Optiku nepotřebuju, stačí mi, co mám.“
+KONTEXT OK? [x] ano   [ ] ne — proč: ______________________________________
+
+PŮVODNÍ: „Naprosto rozumím — kdyby vám to nestačilo, už byste řešil lepší.
+Vyzkoušet to ale můžete bez rizika: když nebudete spokojený, vrátíte se
+k tomu, co máte.“
+
+ALTERNATIVY:
+A) „Rozumím, když to funguje, není důvod měnit. Co vám na tom teď nejvíc
+   vyhovuje?“
+B) „Chápu. Jen pro srovnání — kolik dnes platíte a za jakou rychlost? Ať
+   víte, jestli neplatíte víc za míň.“
+C) „To je v pořádku. Kdyby se něco změnilo, tady je kontakt na mě, ať
+   nemusíte hledat.“
+
+TVOJE VOLBA: A, B
+
+
+=== 2.10 — Nedůvěra ===
+KONTEXT: Žena ~45, dveře na řetízek, mluví skrz škvíru. V domě nedávno
+„chodili falešní energetici“.
+NÁMITKA: „Nevěřím podomním prodejcům.“
+KONTEXT OK? [x] ano   [ ] ne — proč: ______________________________________
+
+PŮVODNÍ: „To je fér přístup. Tady je můj průkaz a vše si můžete ověřit na
+lince T-Mobile. Nemusíte věřit mně — jen mi dejte 30 vteřin na jeden fakt
+o vašem domě.“
+
+ALTERNATIVY:
+A) „Rozumím, po tom, co se tu dělo, bych taky nevěřila. Tady je moje
+   jméno a číslo — klidně si mě ověřte na zákaznické lince, než cokoliv
+   řeknu.“
+B) „Chápu tu obezřetnost. Nemusíte otvírat víc — stačí, když si zapíšete
+   moje jméno a zavoláte si na T-Mobile, jestli u vás dnes opravdu máme být.“
+C) „Naprosto chápu. Klidně nechte řetízek, jen mi řekněte, jestli vám
+   sousedi zmiňovali optiku ve vaší ulici — o to jde.“
+
+TVOJE VOLBA: A, B, C
+
+
+=== 2.11 — Čas ===
+KONTEXT: Z bytu je slyšet hovor a cinkání nádobí. Paní ~40, přátelská, ale
+ve spěchu.
+NÁMITKA: „Teď se to nehodí, mám návštěvu.“
+KONTEXT OK? x ] ano   [ ] ne — proč: ______________________________________
+
+PŮVODNÍ: „Jasně, nebudu rušit. Hodí se spíš zítra kolem šesté, nebo o
+víkendu dopoledne? Zaberu pět minut.“
+
+ALTERNATIVY:
+A) „Jasně, žádný stres. Kdy se stavit, ať vás nerušíme — všední večer nebo
+   víkend?“
+B) „Rozumím, bavte se. Nechám vám kontakt a vy se ozvete, až budete mít
+   chvilku?“
+C) „Chápu. Stačí mi jen vědět, jestli máte doma spíš internet od nás, nebo
+   od konkurence — a domluvíme si klidně jiný termín.“
+
+TVOJE VOLBA: A, B
+
+
+=== 2.12 — Nedůvěra ===
+KONTEXT: Muž ~40, ironický úsměv, ruce založené. Čeká, jak se z toho
+vykroutíš.
+NÁMITKA: „Stejně to pak zdražíte.“
+KONTEXT OK? [ ] ano   [x] ne — proč: dopln o čem jsme spolu už mluvili
+
+PŮVODNÍ: „Rozumím té obavě. Proto vám ukážu přímo ve smlouvě cenu po
+skončení akce — černé na bílém, žádné hvězdičky.“
+
+ALTERNATIVY:
+A) „Chápu, to slýchám často. Podívejte se sám do smlouvy — cena po akci
+   je tam napsaná už teď, nic se neschovává.“
+B) „Fér otázka. Řeknu vám rovnou obě čísla — akční i tu, co platí po roce.
+   Rozhodněte se s oběma na stole.“
+C) „Rozumím vaší obezřetnosti. Můžu vám klidně ukázat cenu za dva roky
+   dopředu, ať víte přesně, do čeho jdete.“
+
+TVOJE VOLBA: A, B, C
+
+
+=== 2.13 — TV ===
+KONTEXT: Mladý pár ~30, v pozadí velká TV s pauznutým seriálem.
+NÁMITKA: „Televizi neřeším, máme Netflix.“
+KONTEXT OK? [x] ano   [ ] ne — proč: ______________________________________
+
+PŮVODNÍ: „Super volba. Magenta TV Plus Netflix nenahrazuje — máte balíčky
+přímo s Netflixem, HBO Max nebo Disney+, k tomu zpětné zhlédnutí. Co vám
+dnes chybí — sport, zprávy naživo?“
+
+ALTERNATIVY:
+A) „Super, Netflix je základ. My ho navíc rovnou spojujeme do jedné
+   faktury s HBO Max nebo Disney+ — sledujete i něco z toho?“
+B) „To je v pohodě, Netflix vám nebereme. Řešíte ale někdy sport nebo
+   živé zprávy, co na Netflixu nejsou?“
+C) „Jasně, chápu. Věděli jste, že si Netflix můžete propojit s naší
+   nabídkou a mít i zpětné přehrávání seriálů, co vám ujely?“
+
+TVOJE VOLBA: A, B, C
+
+
+=== 2.14 — Praktická ===
+KONTEXT: Studentka ~25, na zvonku jiné příjmení, nejistá, jestli vůbec může
+rozhodovat.
+NÁMITKA: „Bydlím v nájmu, nemůžu nic měnit.“
+KONTEXT OK? [x] ano   [ ] ne — proč: ______________________________________
+
+PŮVODNÍ: „Dobrá zpráva — u zavedené optiky se většinou nic nevrtá, jen se
+aktivuje zásuvka. A souhlas majitele umíme vyřešit za vás.“
+
+ALTERNATIVY:
+A) „To je běžné. Optika už tu obvykle je zavedená, jen se aktivuje —
+   nic se nevrtá. S majitelem to umíme domluvit i bez vás.“
+B) „Rozumím, u nájmu je to citlivé. Chcete, ať vám napíšu, co přesně by
+   majitel musel odsouhlasit? Většinou je to formalita.“
+C) „Chápu. Než něco řešíme s majitelem — zajímalo by vás to vůbec, kdyby
+   šlo bez starostí?“
+
+TVOJE VOLBA: B, C
+
+
+=== 2.15 — Konkurence ===
+KONTEXT: Muž ~35, v ruce drží leták konkurence a poklepává na cenu.
+NÁMITKA: „Konkurence mi nabídla levnější tarif.“
+KONTEXT OK? [X] ano   [ ] ne — proč: ______________________________________
+
+PŮVODNÍ: „Může být výhodná. Co přesně obsahuje — rychlost, záruky, cenu po
+akci? Pojďme to srovnat vedle sebe, ať rozhodujete s čísly.“
+
+ALTERNATIVY:
+A) „Klidně mi ukažte, co tam mají napsané. Srovnáme si to bod po bodu —
+   rychlost, cenu po akci, i to, co se stane při výpadku.“
+B) „Může to být fér nabídka. Zajímá vás jen cena, nebo i to, jak rychle
+   vám to opraví, když něco nefunguje?“
+C) „Rozumím, cena je lákavá. Podívejme se ale, co je v ceně skutečně
+   zahrnuté — někdy se to na papíře jen tak tváří levněji.“
+
+TVOJE VOLBA: a, b, c
+
+
+=== 2.16 — Instalace ===
+KONTEXT: Čerstvě zrekonstruovaný byt, paní ~50 se ohlíží na nově vymalovanou
+chodbu.
+NÁMITKA: „Nechci žádné vrtání a dráty.“
+KONTEXT OK? [x] ano   [ ] ne — proč: ______________________________________
+
+PŮVODNÍ: „Rozumím — je vidět, že si v bytě udržujete pořádek. Optické
+vlákno je tenké jako tuha z propisky, průvrt je malinký a technici po
+instalaci vždy vše uklidí.“
+
+ALTERNATIVY:
+A) „Chápu, po rekonstrukci bych taky nechtěl žádné škody. Vrtá se jeden
+   malý otvor, tenký jako propiska, a technici po sobě vždy uklidí.“
+B) „Rozumím tu obavu. Můžu vám ukázat přesně, kudy se kabel vede, ať víte
+   dopředu, že se to nedotkne čerstvé malby.“
+C) „Naprosto chápu. Instalace trvá pár minut a je min. zásah — chcete, ať
+   vám technik napřed ukáže, kde přesně by vrtal?“
+
+TVOJE VOLBA: a, b, c
+
+
+=== 2.17 — Technika ===
+KONTEXT: Muž ~30 v mikině, za ním na botníku bliká router zapadaný botami.
+NÁMITKA: „Wi-fi mi doma stejně nefunguje, to nevyřešíte.“
+KONTEXT OK? [x] ano   [ ] ne — proč: ______________________________________
+
+PŮVODNÍ: „Právě že řešíme obojí — přívod i domácí Wi-Fi. Kde máte router
+teď? Často je problém v pokrytí, ne v lince.“
+
+ALTERNATIVY:
+A) „Vidím ho tamhle pod botami — to samo o sobě signál dost sráží. Kde
+   všude doma potřebujete, aby to chytalo?“
+B) „To se řeší dost často a obvykle to není chyba operátora, ale umístění
+   routeru. Chcete, ať se na to podíváme spolu?“
+C) „Rozumím té frustraci. My navíc řešíme i pokrytí uvnitř bytu, ne jen
+   přívod — kde to nejvíc zlobí?“
+
+TVOJE VOLBA: a, b, c
+
+
+=== 2.18 — Potřeba (senior) ===
+KONTEXT: Pán ~75 s naslouchátkem, mluví pomalu, přívětivý — ale rozhovor
+rád ukončí.
+NÁMITKA: „Jsem starší, tolik toho nepotřebuju.“
+KONTEXT OK? [x] ano   [ ] ne — proč: ______________________________________
+
+PŮVODNÍ: „Rozumím — a přesně proto se ptám: co používáte nejčastěji? Často
+stačí jednodušší a levnější řešení, než jaké máte teď.“
+
+ALTERNATIVY:
+A) „Rozumím, není potřeba nic složitého. Voláte si s rodinou přes telefon
+   nebo tablet? To bývá to hlavní, kvůli čemu to lidé řeší.“
+B) „Chápu. Klidně vám ukážu jen tu nejjednodušší variantu — bez ničeho
+   navíc, co byste nevyužil.“
+C) „To je v pořádku. Jen se zeptám — funguje vám teď doma všechno
+   spolehlivě, i to jednoduché?“
+
+TVOJE VOLBA: a, b, c
+
+
+=== 2.19 — Rozhodování ===
+KONTEXT: Muž ~45, celou dobu přikyvoval, u podpisu couvá. Není proti — jen
+se bojí rozhodnout.
+NÁMITKA: „Musím si to rozmyslet.“
+KONTEXT OK? [x] ano   [ ] ne — proč: ______________________________________
+
+PŮVODNÍ: „Perfektní, oceňuji, že neděláte unáhlená rozhodnutí. Co
+konkrétně si potřebujete promyslet — cenu, instalaci, nebo něco jiného?“
+
+ALTERNATIVY:
+A) „Jasně, rozmyslete si to. Jen mi řekněte, co konkrétně váhá — ať vám
+   to příště rovnou zodpovím.“
+B) „Rozumím. Co by vám pomohlo se rozhodnout už teď — vidět to písemně,
+   nebo si to nechat na pár dní?“
+C) „V pořádku. Nechám vám všechno černé na bílém, ať si to doma v klidu
+   projdete a nemusíte se rozhodovat pod tlakem.“
+
+TVOJE VOLBA: a, b, c
+
+
+=== 2.20 — Loajalita ===
+KONTEXT: Pán ~65, pohodlný, u jednoho operátora celý život. Změna = riziko.
+NÁMITKA: „Nemám rád změny.“
+KONTEXT OK? [x] ano   [ ] ne — proč: ______________________________________
+
+PŮVODNÍ: „To naprosto chápu — kdybyste změnu chtěl, dávno byste ji udělal.
+Na druhou stranu: vaše zvyky se nemění, jen linka pod nimi bude
+spolehlivější.“
+
+ALTERNATIVY:
+A) „Rozumím, věrnost má hodnotu. Nic se pro vás v používání nemění — jen
+   to, co je pod kapotou, bude lepší.“
+B) „Chápu tu obavu. Co kdybych vám ukázal, že se prakticky nic nezmění,
+   kromě rychlejšího internetu?“
+C) „To respektuju. Kdyby to znamenalo jen samé starosti, měl byste
+   pravdu je odmítnout — pojďme se podívat, jestli to tak vůbec je.“
+
+TVOJE VOLBA: a, b, c
+
+
+=== 2.21 — Důvěra ===
+KONTEXT: Žena ~55, opatrná na podpisy doma u dveří. Zájem má, důvěru ne.
+NÁMITKA: „Raději to podepíšu na prodejně.“
+KONTEXT OK? [x] ano   [ ] ne — proč: ______________________________________
+
+PŮVODNÍ: „Rozumím, na prodejně je příjemné prostředí. Připravím vám to tam
+— jen ověřím: jste starší 18 let a máte platný doklad? A kdy vám zítra
+můžeme zavolat pro potvrzení?“
+
+ALTERNATIVY:
+A) „To je naprosto v pořádku. Připravím vám vše dopředu, ať na prodejně
+   nečekáte — kterou byste navštívila nejradši?“
+B) „Rozumím, doma se podepisuje hůř. Dám vám na sebe kontakt a vy si
+   zajděte, až budete mít čas — nic vás netlačí.“
+C) „Chápu. Domluvme si aspoň termín, kdy na prodejnu zajdete, ať vám tam
+   rovnou vše připraví a nemusíte čekat.“
+
+TVOJE VOLBA: a, b
+
+
+=== 2.22 — Rozhodování ===
+KONTEXT: Muž ~40, nejistý v technice, deleguje rozhodnutí na známého
+„ajťáka“.
+NÁMITKA: „Poradím se s kamarádem, on tomu rozumí.“
+KONTEXT OK? [x] ano   [ ] ne — proč: ______________________________________
+
+PŮVODNÍ: „Rozumím. Co z toho vám můžu dovysvětlit hned teď — klidně
+jednoduše, jako bych to vysvětloval svému kamarádovi? Co konkrétně by
+kamaráda zajímalo?“
+
+ALTERNATIVY:
+A) „Jasně, dobrý nápad. Chcete mu rovnou zavolat? Klidně mu to vysvětlím
+   přímo, ať máte jistotu.“
+B) „Rozumím. Napíšu vám na papír pár technických čísel, co ho určitě
+   bude zajímat — rychlost, typ připojení, cenu.“
+C) „To je fér. Co kdybych vám nechal kontakt a vy se ozvali, až to
+   spolu proberete?“
+
+TVOJE VOLBA: a, b, c
+
+
+=== 2.23 — Únik ===
+KONTEXT: Muž ~45, dveře už přivírá, nataženou rukou si říká o leták.
+NÁMITKA: „Nechte mi leták, já se ozvu.“
+KONTEXT OK? [x] ano   [ ] ne — proč: ______________________________________
+
+PŮVODNÍ: „Nechám — a zakroužkuji vám jedinou věc, která se týká vašeho
+domu. A ozvu se radši já: hodí se úterý, nebo čtvrtek?“
+
+ALTERNATIVY:
+A) „Jasně, nechám vám ho. Zakroužkuju tam jednu konkrétní věc pro váš dům
+   — a raději se ozvu já, ať to nezapadne. Úterý nebo čtvrtek?“
+B) „Dobře. Napíšu na leták svoje číslo — kdybyste se neozval, můžu se
+   stavit příští týden znovu?“
+C) „V pořádku. Než odejdu — je pro vás teď víc téma cena, nebo rychlost?
+   Ať vím, co na letáku zvýraznit.“
+
+TVOJE VOLBA: a, b, c
+
+
+==========================================
+POZNÁMKY / OBECNÉ PŘIPOMÍNKY (kontext, tón, cokoliv dalšího):
+u každé otázky jsem ti vybral vyhovující odpovědi. Zaveď je do aplikace, klidně můžeš vždy náhodně vybrat jednu pro zobrazení, pro kalibraci ale používej všechny

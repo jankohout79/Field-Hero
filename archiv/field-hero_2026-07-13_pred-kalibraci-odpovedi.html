@@ -317,36 +317,21 @@ const ASSESS = [
     criteria:'(1) představení jménem a firmou (ideálně i průkaz), (2) jasný důvod návštěvy (např. oznámení ve vchodě), (3) respekt k jeho času (naznačí, že to bude krátké), (4) žádná zmínka o ceně/akci/slevě hned na začátku. Chybějící představení nebo důvod návštěvy je zde oprávněný a závažný nedostatek.',
     keys:['jmenuji|jsem|novák|t-mobile|osobně|průkaz','oznámení|vchod|dům|domě|nárok|výhod|soused|ulic','vteřin|chvilk|nezdržím|krátce'],
     penalty:'akce|sleva|299|nabíz|nezajímalo',
-    models:[
-      '„Dobrý den, Novák, T-Mobile Osobně — tady průkaz. Jsem tu na základě oznámení ve vchodě: mám každému předat, na jaké výhody má nárok. Zdržím vás jen chvilku.“',
-      '„Dobrý den, Petr Novák, T-Mobile Osobně, tady je můj průkaz. Chodím dnes vaší ulicí kvůli optice, co se tu instaluje — zabere to jen chviličku, můžu?“',
-      '„Dobrý den, promiňte že ruším — jsem Novák od T-Mobile, jsme dnes ve vašem domě kvůli optickému připojení. Máte minutku, nebo se mám stavit jindy?“',
-      '„Dobrý den, Novák, T-Mobile Osobně. Víte už, že se ve vašem domě spouští optika? Mám pro vás 30 vteřin info, co z toho můžete mít.“'
-    ] },
-  { q:'Rozhovor už chvíli běží — představil ses a zákazník teď sám zvedl otázku: „Jaký je vlastně rozdíl mezi optikou a tím, co mám teď přes vzduch?“ Odpověz mu.',
-    tag:'Znalost Fiber · uprostřed rozhovoru', skill:'Fiber Knowledge',
+    model:'„Dobrý den, Novák, T-Mobile Osobně — tady průkaz. Jsem tu na základě oznámení ve vchodě: mám každému předat, na jaké výhody má nárok. Zdržím vás jen chvilku.“ (kdo jsem + proč tu jsem + respekt k času, žádný produkt ani cena)' },
+  { q:'Zákazník se ptá: „Jaký je vlastně rozdíl mezi optikou a tím, co mám teď přes vzduch?“ Odpověz mu.',
+    tag:'Znalost Fiber', skill:'Fiber Knowledge',
     fase:'Toto NENÍ prvotní kontakt — rozhovor už běží, zákazník se sám doptává na techniku. Prodejce se představovat ani znovu zahajovat nemá.',
     criteria:'(1) srozumitelné, věcně správné vysvětlení výhody optiky (stabilita, nezávislost na počasí/zatížení sítě), (2) žádné pomlouvání konkurence ani prázdné superlativy ("nejlepší", "garantuju"), (3) navázání zjišťovací otázkou místo jen přednášky. NEHODNOŤ chybějící představení ani zahájení — v této fázi se to neočekává.',
     keys:['světl|vlákn|až k vám|k vám domů|vlastní','stabil|nezávis|počasí|kolik lidí|výpad','kolik zařízení|co doma|jak funguje|k čemu|vyhovuje'],
     penalty:'nejlepší|garantuju|prostě',
-    models:[
-      '„Optika vede signál světlem až k vám domů — stabilita a odezva nezávisí na počasí ani na tom, kolik lidí je online. Kolik zařízení u vás běží najednou?“',
-      '„Optika vede signál světlem přímo k vám domů, takže rychlost i stabilita jsou stejné, ať je venku bouřka nebo večer, kdy je online celá ulice. Kolik zařízení běžně používáte najednou?“',
-      '„Zjednodušeně — drát vs. vzduch. Optika neztrácí signál kvůli počasí ani sousedům na síti. Sledujete třeba video, nebo hrajete online?“',
-      '„Hlavní rozdíl je spolehlivost — u signálu vzduchem kolísá rychlost podle počtu uživatelů a počasí, optika ne. Pracuje nebo hraje u vás někdo z domova?“'
-    ] },
+    model:'„Optika vede signál světlem až k vám domů — stabilita a odezva nezávisí na počasí ani na tom, kolik lidí je online. Kolik zařízení u vás běží najednou?“ (konkrétní benefit + zjišťovací otázka)' },
   { q:'Jsi uvnitř. Vidíš velkou TV, konzoli a dva notebooky. Co řekneš jako první?',
     tag:'Čtení prostředí · Zjišťování', skill:'Discovery',
     fase:'Toto NENÍ prvotní kontakt — prodejce už byl pozván dovnitř, dveře i představení proběhly dříve. Zahájení se zde nehodnotí.',
     criteria:'(1) všimnutí si konkrétního detailu v domácnosti (TV, notebooky, konzole), (2) přirozený přechod na zjišťovací otázku místo okamžité nabídky balíčku/ceny, (3) otázka působí jako přirozený zájem, ne prodejní tlak. NEHODNOŤ chybějící představení ani zahájení — v této fázi se to neočekává.',
     keys:['vidím|všiml|máte tu|hodně zařízení|dost zařízení','jak zvládá|jak funguje|když jste online|najednou|večer','[?]'],
     penalty:'nabídnu|balíček|rovnou|spočítám',
-    models:[
-      '„Vidím, že u vás běží dost zařízení najednou. Jak zvládá připojení, když jste online všichni?“',
-      '„Vidím, že tu máte pěkně vybavenou domácnost — televize, konzole, notebooky. Jak to celé zvládá připojení, když jede všechno najednou?“',
-      '„To je hezká sestava zařízení. Stává se vám někdy, že to sekne, když je toho na síti víc?“',
-      '„Pěkné zázemí. Řešíte někdy, že vám wifi nestíhá, když hrajete a zároveň běží televize?“'
-    ] },
+    model:'„Vidím, že u vás běží dost zařízení najednou. Jak zvládá připojení, když jste online všichni?“ (respektující postřeh → přirozená zjišťovací otázka, ne okamžitá nabídka)' },
 ];
 function vAssess(){
   const i=S.assessIdx, a=ASSESS[i];
@@ -366,7 +351,7 @@ function vAssess(){
         ${ring(L.skore,60,6,L.skore>=70?'var(--green)':L.skore>=50?'var(--amber)':'var(--red)')}
         <p style="flex:1;font-size:12.5px;line-height:1.55">${L.fb}</p></div></div>
       <div class="card flat"><span class="eyebrow mut">Jak by to řekl špičkový obchodník</span>
-        <p style="font-size:12.5px;line-height:1.6;margin-top:8px;color:var(--muted)">${L.model}</p></div>
+        <p style="font-size:12.5px;line-height:1.6;margin-top:8px;color:var(--muted)">${a.model}</p></div>
       <button class="btn" onclick="assessNext()">${i<ASSESS.length-1?'Další situace ›':'Zobrazit mapu dovedností'}</button>
     </div>`;
   }
@@ -411,8 +396,6 @@ ODPOVĚĎ PRODEJCE (přepis řeči): „${tx}“
 KRITÉRIA HODNOCENÍ PRO TUTO KONKRÉTNÍ FÁZI (hodnoť POUZE podle nich, nevymýšlej si další požadavky mimo ně): ${a.criteria}
 Vždy navíc platí etický kodex T-Mobile Osobně: nikdy nepomlouvej konkurenci, nikdy neuváděj cenu/slevu bez konečné ceny.
 Škála skóre: 0–20 slabá/chybná odpověď, 21–50 částečná (chybí klíčový prvek kritérií), 51–75 dobrá s drobnou mezerou, 76–100 vzorová odpověď.
-PŘIJATELNÉ VZOROVÉ ODPOVĚDI PRO TUTO SITUACI (kalibrace — jde o rozmezí toho, co je „vzorové", ne jedinou správnou větu; podobně kvalitní odpověď v jiných slovech hodnoť stejně vysoko):
-${a.models.map(m=>'- '+m).join('\n')}
 ${buildCalibration({})}${buildMaterials()}
 Vrať POUZE validní JSON:
 {"skore":0,"fb":"1–2 věty česky, konkrétně co bylo dobře a co zlepšit"}`,'drill_eval');
@@ -423,10 +406,10 @@ Vrať POUZE validní JSON:
     if(new RegExp(a.penalty).test(t.trim().slice(0,60))) s-=18;
     const n=tx.split(/\s+/).filter(Boolean).length; if(n<4) s-=20; if(n>70) s-=6;
     s=Math.max(12,Math.min(96,s));
-    out={skore:s, fb:s>=70?'Silná odpověď — má strukturu i tah. Přesně tímhle směrem.':(s>=50?'Dobrý základ. Chybí ještě jeden prvek kritérií pro tuhle fázi — porovnej s odpovědí níže.':'Tady je prostor: porovnej s odpovědí níže a drž se kritérií pro tuhle fázi.')};
+    out={skore:s, fb:s>=70?'Silná odpověď — má strukturu i tah. Přesně tímhle směrem.':(s>=50?'Dobrý základ. Chybí ještě jeden prvek metodiky — porovnej s modelovou odpovědí níže.':'Tady je prostor: vrať se ke struktuře kdo jsem → proč tu jsem → otázka. Porovnej s modelem níže.')};
   }
   out.skore=Math.max(0,Math.min(100,Math.round(out.skore)));
-  S.assessScore+=out.skore; S.aLast={tx,m,skore:out.skore,fb:out.fb,model:pick(a.models)};
+  S.assessScore+=out.skore; S.aLast={tx,m,skore:out.skore,fb:out.fb};
   S.aState='fb'; render();
 }
 function assessNext(){
@@ -1945,30 +1928,30 @@ function vVoiceRpResult(){
 }
 /* ================= KNIHOVNA NÁMITEK ================= */
 const OBJ_LIB=[
- {o:'Jsem spokojený se svým poskytovatelem.',ctx:'Cihlový dům, sobota 10:30. Muž ~50 v zahradním oblečení, klidný, nikam nespěchá.',c:'Loajalita',a:'Věrný zákazník',keys:['oceňuji','věrnost','výhody','jaké'],tips:['„To je fajn slyšet, spokojenost je základ. Co u nich nejvíc oceňujete — cenu, rychlost, nebo servis?“','„Rád to slyším. Jen ze zvědavosti — kdy jste naposledy porovnával, co za ty peníze reálně dostáváte?“']},
- {o:'Nemám čas, spěchám.',ctx:'Novostavba, všední den 17:50. Žena ~35 v kostýmku, klíče od auta v ruce, už je na odchodu.',c:'Čas',a:'Zaneprázdněný profesionál',keys:['vteřin','20','krátce','jedna věc'],tips:['„Jasně, žádný problém. Nechám vám vizitku a napíšu na ni jednu věc, co se týká vašeho domu — kdy se vám líp ozvu, večer nebo ráno?“','„Chápu, běžíte. Jen rychle — máte doma optiku, nebo pořád starou linku?“','„Rozumím, teď ne. Kdy vás dneska nebo zítra nejmíň vyrušit na pár minut?“']},
- {o:'Pošlete mi to e-mailem.',ctx:'Kancelářský typ ~40, dveře otevírá jen napůl, zdvořilý úsměv. Stihl jsi mu krátce představit optiku a zmínit rychlost/stabilitu — teď hledá slušný způsob, jak rozhovor ukončit.',c:'Únik',a:'„Pošlete e-mail“',keys:['rychlost','televiz','čtvrtek','pátek','ozvu'],tips:['„Jasně, pošlu. Abych vám neposílal desetistránkový PDF — zajímá vás spíš internet, nebo i televize?“','„Rád — a rovnou se zeptám, ať to není naprázdno: je u vás teď spíš problém s rychlostí, nebo s cenou?“']},
- {o:'Kolik to stojí? … To je moc drahé.',ctx:'Panelák, muž ~45. Na cenu se zeptal dřív, než jsi dořekl pozdrav.',c:'Cena',a:'Lovec cen',keys:['oceňuji','rozpočt','srovn','kolik platíte'],tips:['„Rozumím, cena hraje roli vždycky. Kolik teď platíte a za co konkrétně? Ať vím, jestli vás vůbec můžu posunout k lepšímu.“','„Chápu. Než řeknu číslo — zajímá vás spíš nejlevnější varianta, nebo nejlepší poměr cena/výkon?“','„Jasně, k ceně se dostaneme. Napřed ale — co vám na současném připojení nejvíc vadí, nebo je spokojenost 100%?“']},
- {o:'Musím se poradit s manželkou.',ctx:'Rodinný dům, večer. Muž ~55, váhavý, během řeči se ohlíží do domu.',c:'Rozhodování',a:'Decision influencer',keys:['oceňuji','doma','zavolat','kdy'],tips:['„To je správně. Je doma? Klidně počkám, nebo se zeptám rovnou obou — zabere to pět minut.“','„Rozumím, velké rozhodnutí ať padne spolu. Co byste jí řekl, že tu dnes bylo za nabídku? Pomůžu vám to shrnout na papír.“','„Chápu. Kdy budete oba doma, abych se mohl stavit a probrat to s vámi společně?“']},
- {o:'Už jste tu byli minulý měsíc.',ctx:'Panelák, na dveřích cedulka „Nevhazovat letáky“. Podrážděný tón od první vteřiny.',c:'Nedůvěra',a:'Skeptik',keys:['omlouvám','nová','změnil','od té doby'],tips:['„Rozumím, že vás to štve. Nebudu se opakovat — řeknu vám jen, co se změnilo, a jestli to nedává smysl, jdu dál.“','„Chápu tu nedůvěru. Dám vám kontakt na sebe, ať příště víte, s kým mluvíte, a klidně mě sám odmítnete, když nebude co řešit.“']},
- {o:'Internet skoro nepoužívám.',ctx:'Starší dům, paní ~70, brýle na řetízku, přívětivá, ale opatrná.',c:'Potřeba',a:'Senior',keys:['telefon','vnouča','video','kdo k vám'],tips:['„To je v pořádku, spoustě lidí stačí málo. Voláte si někdy přes telefon s rodinou na video? To bývá ten hlavní důvod, proč to lidé řeší.“','„Rozumím. A televizi sledujete? I na tu se dnes připojení hodí, ať neskáče obraz.“','„Chápu, není potřeba nic složitého. Spíš se ptám, jestli vám doma všechno funguje spolehlivě, i když nejste online typ.“']},
- {o:'Mám smlouvu a pokutu za odchod.',ctx:'Bytovka, muž ~35, věcný, mluví rychle — tohle už evidentně řešil.',c:'Závazek',a:'Věrný zákazník',keys:['rodné číslo','ičo','modem','odpustíme','kdy končí'],tips:['„Jasně, to řešíme často. Kdy vám smlouva reálně končí? Můžeme se sejít těsně před tím termínem, ať vás to nic nestojí.“','„Rozumím. Co přesně by vás ta pokuta stála? Někdy se vyplatí přejít i s ní, jindy počkáme — spočítejme si to spolu.“','„Chápu, závazek je závazek. Dosplácíte ho v klidu a my mezitím připravíme, co budete mít u nás — ať máte čas na rozmyšlenou.“']},
- {o:'S vámi jsem měl špatnou zkušenost.',ctx:'Muž ~50. Jakmile uviděl logo na vestě, ztvrdl mu výraz a založil ruce.',c:'Zkušenost',a:'Špatná zkušenost',keys:['mrzí','co konkrétně','stalo','písemně'],tips:['„To mě mrzí, opravdu. Co se přesně stalo? Chci to slyšet, ne se vymlouvat.“','„To je mi líto slyšet. Nebudu předstírat, že se nic nestalo — řekněte mi co, a já vám na rovinu řeknu, jestli se to teď dělá jinak, nebo ne.“']},
- {o:'Optiku nepotřebuju, stačí mi, co mám.',ctx:'Muž ~60, mávne rukou, ale dveře nechává pootevřené — není to tvrdé ne.',c:'Potřeba',a:'Skeptik',keys:['rozumím','bez rizika','vyzkoušet','vrátit'],tips:['„Rozumím, když to funguje, není důvod měnit. Co vám na tom teď nejvíc vyhovuje?“','„Chápu. Jen pro srovnání — kolik dnes platíte a za jakou rychlost? Ať víte, jestli neplatíte víc za míň.“']},
- {o:'Nevěřím podomním prodejcům.',ctx:'Žena ~45, dveře na řetízek, mluví skrz škvíru. V domě nedávno „chodili falešní energetici“.',c:'Nedůvěra',a:'Skeptik',keys:['fér','průkaz','ověřit','nemusíte'],tips:['„Rozumím, po tom, co se tu dělo, bych taky nevěřila. Tady je moje jméno a číslo — klidně si mě ověřte na zákaznické lince, než cokoliv řeknu.“','„Chápu tu obezřetnost. Nemusíte otvírat víc — stačí, když si zapíšete moje jméno a zavoláte si na T-Mobile, jestli u vás dnes opravdu máme být.“','„Naprosto chápu. Klidně nechte řetízek, jen mi řekněte, jestli vám sousedi zmiňovali optiku ve vaší ulici — o to jde.“']},
- {o:'Teď se to nehodí, mám návštěvu.',ctx:'Z bytu je slyšet hovor a cinkání nádobí. Paní ~40, přátelská, ale ve spěchu.',c:'Čas',a:'Zaneprázdněný profesionál',keys:['kdy','večer','zítra','hodí'],tips:['„Jasně, žádný stres. Kdy se stavit, ať vás nerušíme — všední večer nebo víkend?“','„Rozumím, bavte se. Nechám vám kontakt a vy se ozvete, až budete mít chvilku?“']},
- {o:'Stejně to pak zdražíte.',ctx:'Muž ~40, ironický úsměv, ruce založené. Už jsi mu stihl zmínit akční cenu — teď testuje, jestli po ní nepřijde plošné zdražení jako jinde.',c:'Nedůvěra',a:'Skeptik',keys:['smlouv','garant','písemně','po akci'],tips:['„Chápu, to slýchám často. Podívejte se sám do smlouvy — cena po akci je tam napsaná už teď, nic se neschovává.“','„Fér otázka. Řeknu vám rovnou obě čísla — akční i tu, co platí po roce. Rozhodněte se s oběma na stole.“','„Rozumím vaší obezřetnosti. Můžu vám klidně ukázat cenu za dva roky dopředu, ať víte přesně, do čeho jdete.“']},
- {o:'Televizi neřeším, máme Netflix.',ctx:'Mladý pár ~30, v pozadí velká TV s pauznutým seriálem.',c:'TV',a:'TV nadšenec',keys:['balíč','zpětné','sport','nenahrazuje'],tips:['„Super, Netflix je základ. My ho navíc rovnou spojujeme do jedné faktury s HBO Max nebo Disney+ — sledujete i něco z toho?“','„To je v pohodě, Netflix vám nebereme. Řešíte ale někdy sport nebo živé zprávy, co na Netflixu nejsou?“','„Jasně, chápu. Věděli jste, že si Netflix můžete propojit s naší nabídkou a mít i zpětné přehrávání seriálů, co vám ujely?“']},
- {o:'Bydlím v nájmu, nemůžu nic měnit.',ctx:'Studentka ~25, na zvonku jiné příjmení, nejistá, jestli vůbec může rozhodovat.',c:'Praktická',a:'Manažer domácnosti',keys:['bez zásahu','zásuvk','majitel','souhlas'],tips:['„Rozumím, u nájmu je to citlivé. Chcete, ať vám napíšu, co přesně by majitel musel odsouhlasit? Většinou je to formalita.“','„Chápu. Než něco řešíme s majitelem — zajímalo by vás to vůbec, kdyby šlo bez starostí?“']},
- {o:'Konkurence mi nabídla levnější tarif.',ctx:'Muž ~35, v ruce drží leták konkurence a poklepává na cenu.',c:'Konkurence',a:'Lovec cen',keys:['co obsahuje','rychlost','záruk','srovnat'],tips:['„Klidně mi ukažte, co tam mají napsané. Srovnáme si to bod po bodu — rychlost, cenu po akci, i to, co se stane při výpadku.“','„Může to být fér nabídka. Zajímá vás jen cena, nebo i to, jak rychle vám to opraví, když něco nefunguje?“','„Rozumím, cena je lákavá. Podívejme se ale, co je v ceně skutečně zahrnuté — někdy se to na papíře jen tak tváří levněji.“']},
- {o:'Nechci žádné vrtání a dráty.',ctx:'Čerstvě zrekonstruovaný byt, paní ~50 se ohlíží na nově vymalovanou chodbu.',c:'Instalace',a:'Manažer domácnosti',keys:['tuha','propisky','uklidí','technici','rozumím'],tips:['„Chápu, po rekonstrukci bych taky nechtěl žádné škody. Vrtá se jeden malý otvor, tenký jako propiska, a technici po sobě vždy uklidí.“','„Rozumím tu obavu. Můžu vám ukázat přesně, kudy se kabel vede, ať víte dopředu, že se to nedotkne čerstvé malby.“','„Naprosto chápu. Instalace trvá pár minut a je min. zásah — chcete, ať vám technik napřed ukáže, kde přesně by vrtal?“']},
- {o:'Wi-Fi mi doma stejně nefunguje, to nevyřešíte.',ctx:'Muž ~30 v mikině, za ním na botníku bliká router zapadaný botami.',c:'Technika',a:'Technický expert',keys:['router','wi-fi','pokrytí','rozdíl'],tips:['„Vidím ho tamhle pod botami — to samo o sobě signál dost sráží. Kde všude doma potřebujete, aby to chytalo?“','„To se řeší dost často a obvykle to není chyba operátora, ale umístění routeru. Chcete, ať se na to podíváme spolu?“','„Rozumím té frustraci. My navíc řešíme i pokrytí uvnitř bytu, ne jen přívod — kde to nejvíc zlobí?“']},
- {o:'Jsem starší, tolik toho nepotřebuju.',ctx:'Pán ~75 s naslouchátkem, mluví pomalu, přívětivý — ale rozhovor rád ukončí.',c:'Potřeba',a:'Senior',keys:['jednoduch','pomůže','rodina','volání'],tips:['„Rozumím, není potřeba nic složitého. Voláte si s rodinou přes telefon nebo tablet? To bývá to hlavní, kvůli čemu to lidé řeší.“','„Chápu. Klidně vám ukážu jen tu nejjednodušší variantu — bez ničeho navíc, co byste nevyužil.“','„To je v pořádku. Jen se zeptám — funguje vám teď doma všechno spolehlivě, i to jednoduché?“']},
- {o:'Musím si to rozmyslet.',ctx:'Muž ~45, celou dobu přikyvoval, u podpisu couvá. Není proti — jen se bojí rozhodnout.',c:'Rozhodování',a:'Nerozhodný',keys:['perfektní','oceňuji','co konkrétně','promyslet'],tips:['„Jasně, rozmyslete si to. Jen mi řekněte, co konkrétně váhá — ať vám to příště rovnou zodpovím.“','„Rozumím. Co by vám pomohlo se rozhodnout už teď — vidět to písemně, nebo si to nechat na pár dní?“','„V pořádku. Nechám vám všechno černé na bílém, ať si to doma v klidu projdete a nemusíte se rozhodovat pod tlakem.“']},
- {o:'Nemám rád změny.',ctx:'Pán ~65, pohodlný, u jednoho operátora celý život. Změna = riziko.',c:'Loajalita',a:'Věrný zákazník',keys:['chápu','dávno','na druhou stranu','nic neměníte'],tips:['„Rozumím, věrnost má hodnotu. Nic se pro vás v používání nemění — jen to, co je pod kapotou, bude lepší.“','„Chápu tu obavu. Co kdybych vám ukázal, že se prakticky nic nezmění, kromě rychlejšího internetu?“','„To respektuju. Kdyby to znamenalo jen samé starosti, měl byste pravdu je odmítnout — pojďme se podívat, jestli to tak vůbec je.“']},
- {o:'Raději to podepíšu na prodejně.',ctx:'Žena ~55, opatrná na podpisy doma u dveří. Zájem má, důvěru ne.',c:'Důvěra',a:'Skeptik',keys:['rozumím','prodejn','připravím','doklad','zavolat'],tips:['„To je naprosto v pořádku. Připravím vám vše dopředu, ať na prodejně nečekáte — kterou byste navštívila nejradši?“','„Rozumím, doma se podepisuje hůř. Dám vám na sebe kontakt a vy si zajděte, až budete mít čas — nic vás netlačí.“']},
- {o:'Poradím se s kamarádem, on tomu rozumí.',ctx:'Muž ~40, nejistý v technice, deleguje rozhodnutí na známého „ajťáka“.',c:'Rozhodování',a:'Nerozhodný',keys:['rozumím','dovysvětlit','jednoduše','co konkrétně'],tips:['„Jasně, dobrý nápad. Chcete mu rovnou zavolat? Klidně mu to vysvětlím přímo, ať máte jistotu.“','„Rozumím. Napíšu vám na papír pár technických čísel, co ho určitě bude zajímat — rychlost, typ připojení, cenu.“','„To je fér. Co kdybych vám nechal kontakt a vy se ozvali, až to spolu proberete?“']},
- {o:'Nechte mi leták, já se ozvu.',ctx:'Muž ~45, dveře už přivírá, nataženou rukou si říká o leták.',c:'Únik',a:'„Pošlete e-mail“',keys:['zakroužku','konkrétní','ozvu se já','termín'],tips:['„Jasně, nechám vám ho. Zakroužkuju tam jednu konkrétní věc pro váš dům — a raději se ozvu já, ať to nezapadne. Úterý nebo čtvrtek?“','„Dobře. Napíšu na leták svoje číslo — kdybyste se neozval, můžu se stavit příští týden znovu?“','„V pořádku. Než odejdu — je pro vás teď víc téma cena, nebo rychlost? Ať vím, co na letáku zvýraznit.“']},
+ {o:'Jsem spokojený se svým poskytovatelem.',ctx:'Cihlový dům, sobota 10:30. Muž ~50 v zahradním oblečení, klidný, nikam nespěchá.',c:'Loajalita',a:'Věrný zákazník',keys:['oceňuji','věrnost','výhody','jaké'],tip:'„Skvělé, věrnost oceňuji. Jaké speciální výhody vám za ni váš poskytovatel dal? U nás na věrnost slyšíme…“'},
+ {o:'Nemám čas, spěchám.',ctx:'Novostavba, všední den 17:50. Žena ~35 v kostýmku, klíče od auta v ruce, už je na odchodu.',c:'Čas',a:'Zaneprázdněný profesionál',keys:['vteřin','20','krátce','jedna věc'],tip:'„Chápu, zdržím vás maximálně 20 vteřin. Jen jedna věc o připojení v téhle ulici, kterou většina sousedů netuší.“'},
+ {o:'Pošlete mi to e-mailem.',ctx:'Kancelářský typ ~40, dveře otevírá jen napůl, zdvořilý úsměv — klasické slušné ukončení.',c:'Únik',a:'„Pošlete e-mail“',keys:['rychlost','televiz','čtvrtek','pátek','ozvu'],tip:'„Rád pošlu. Ať tam nemáte balast — jde vám spíš o rychlost, nebo o televizi? A můžu se ve čtvrtek ozvat, jestli to dávalo smysl?“'},
+ {o:'Kolik to stojí? … To je moc drahé.',ctx:'Panelák, muž ~45. Na cenu se zeptal dřív, než jsi dořekl pozdrav.',c:'Cena',a:'Lovec cen',keys:['oceňuji','rozpočt','srovn','kolik platíte'],tip:'„Oceňuji, že to hlídáte z pohledu rozpočtu. Tady jde ale o jinou síť s jinou kvalitou — pojďme nejdřív srovnat, co za své peníze reálně dostáváte teď.“'},
+ {o:'Musím se poradit s manželkou.',ctx:'Rodinný dům, večer. Muž ~55, váhavý, během řeči se ohlíží do domu.',c:'Rozhodování',a:'Decision influencer',keys:['oceňuji','doma','zavolat','kdy'],tip:'„Výborně, oceňuji, že se nerozhodujete sám. Je partnerka teď doma? Můžeme jí zavolat? Pokud ne, kdy to spolu proberete?“'},
+ {o:'Už jste tu byli minulý měsíc.',ctx:'Panelák, na dveřích cedulka „Nevhazovat letáky“. Podrážděný tón od první vteřiny.',c:'Nedůvěra',a:'Skeptik',keys:['omlouvám','nová','změnil','od té doby'],tip:'„Máte pravdu a omlouvám se. Jdu ale s jednou konkrétní novinkou, která od té doby platí pro váš dům — 30 vteřin?“'},
+ {o:'Internet skoro nepoužívám.',ctx:'Starší dům, paní ~70, brýle na řetízku, přívětivá, ale opatrná.',c:'Potřeba',a:'Senior',keys:['telefon','vnouča','video','kdo k vám'],tip:'„A když k vám přijedou děti nebo vnoučata — funguje jim tu všechno? Často to řešíme právě kvůli návštěvám.“'},
+ {o:'Mám smlouvu a pokutu za odchod.',ctx:'Bytovka, muž ~35, věcný, mluví rychle — tohle už evidentně řešil.',c:'Závazek',a:'Věrný zákazník',keys:['rodné číslo','ičo','modem','odpustíme','kdy končí'],tip:'„Rozumím. Máte smlouvu na rodné číslo, nebo na IČO? Jestli jde o modem — můžete ho v klidu dosplácet a my vám u nás pronájem odpustíme.“'},
+ {o:'S vámi jsem měl špatnou zkušenost.',ctx:'Muž ~50. Jakmile uviděl logo na vestě, ztvrdl mu výraz a založil ruce.',c:'Zkušenost',a:'Špatná zkušenost',keys:['mrzí','co konkrétně','stalo','písemně'],tip:'„To mě velmi mrzí — můžu se zeptat, co konkrétně se stalo? … Rozumím. Neslibuji zázraky, ale ukážu vám písemně, co se od té doby změnilo.“'},
+ {o:'Optiku nepotřebuju, stačí mi, co mám.',ctx:'Muž ~60, mávne rukou, ale dveře nechává pootevřené — není to tvrdé ne.',c:'Potřeba',a:'Skeptik',keys:['rozumím','bez rizika','vyzkoušet','vrátit'],tip:'„Naprosto rozumím — kdyby vám to nestačilo, už byste řešil lepší. Vyzkoušet to ale můžete bez rizika: když nebudete spokojený, vrátíte se k tomu, co máte.“'},
+ {o:'Nevěřím podomním prodejcům.',ctx:'Žena ~45, dveře na řetízek, mluví skrz škvíru. V domě nedávno „chodili falešní energetici“.',c:'Nedůvěra',a:'Skeptik',keys:['fér','průkaz','ověřit','nemusíte'],tip:'„To je fér přístup. Tady je můj průkaz a vše si můžete ověřit na lince T-Mobile. Nemusíte věřit mně — jen mi dejte 30 vteřin na jeden fakt o vašem domě.“'},
+ {o:'Teď se to nehodí, mám návštěvu.',ctx:'Z bytu je slyšet hovor a cinkání nádobí. Paní ~40, přátelská, ale ve spěchu.',c:'Čas',a:'Zaneprázdněný profesionál',keys:['kdy','večer','zítra','hodí'],tip:'„Jasně, nebudu rušit. Hodí se spíš zítra kolem šesté, nebo o víkendu dopoledne? Zaberu pět minut.“'},
+ {o:'Stejně to pak zdražíte.',ctx:'Muž ~40, ironický úsměv, ruce založené. Čeká, jak se z toho vykroutíš.',c:'Nedůvěra',a:'Skeptik',keys:['smlouv','garant','písemně','po akci'],tip:'„Rozumím té obavě. Proto vám ukážu přímo ve smlouvě cenu po skončení akce — černé na bílém, žádné hvězdičky.“'},
+ {o:'Televizi neřeším, máme Netflix.',ctx:'Mladý pár ~30, v pozadí velká TV s pauznutým seriálem.',c:'TV',a:'TV nadšenec',keys:['balíč','zpětné','sport','nenahrazuje'],tip:'„Super volba. Magenta TV Plus Netflix nenahrazuje — máte balíčky přímo s Netflixem, HBO Max nebo Disney+, k tomu zpětné zhlédnutí. Co vám dnes chybí — sport, zprávy naživo?“'},
+ {o:'Bydlím v nájmu, nemůžu nic měnit.',ctx:'Studentka ~25, na zvonku jiné příjmení, nejistá, jestli vůbec může rozhodovat.',c:'Praktická',a:'Manažer domácnosti',keys:['bez zásahu','zásuvk','majitel','souhlas'],tip:'„Dobrá zpráva — u zavedené optiky se většinou nic nevrtá, jen se aktivuje zásuvka. A souhlas majitele umíme vyřešit za vás.“'},
+ {o:'Konkurence mi nabídla levnější tarif.',ctx:'Muž ~35, v ruce drží leták konkurence a poklepává na cenu.',c:'Konkurence',a:'Lovec cen',keys:['co obsahuje','rychlost','záruk','srovnat'],tip:'„Může být výhodná. Co přesně obsahuje — rychlost, záruky, cenu po akci? Pojďme to srovnat vedle sebe, ať rozhodujete s čísly.“'},
+ {o:'Nechci žádné vrtání a dráty.',ctx:'Čerstvě zrekonstruovaný byt, paní ~50 se ohlíží na nově vymalovanou chodbu.',c:'Instalace',a:'Manažer domácnosti',keys:['tuha','propisky','uklidí','technici','rozumím'],tip:'„Rozumím — je vidět, že si v bytě udržujete pořádek. Optické vlákno je tenké jako tuha z propisky, průvrt je malinký a technici po instalaci vždy vše uklidí.“'},
+ {o:'Wi-Fi mi doma stejně nefunguje, to nevyřešíte.',ctx:'Muž ~30 v mikině, za ním na botníku bliká router zapadaný botami.',c:'Technika',a:'Technický expert',keys:['router','wi-fi','pokrytí','rozdíl'],tip:'„Právě že řešíme obojí — přívod i domácí Wi-Fi. Kde máte router teď? Často je problém v pokrytí, ne v lince.“'},
+ {o:'Jsem starší, tolik toho nepotřebuju.',ctx:'Pán ~75 s naslouchátkem, mluví pomalu, přívětivý — ale rozhovor rád ukončí.',c:'Potřeba',a:'Senior',keys:['jednoduch','pomůže','rodina','volání'],tip:'„Rozumím — a přesně proto se ptám: co používáte nejčastěji? Často stačí jednodušší a levnější řešení, než jaké máte teď.“'},
+ {o:'Musím si to rozmyslet.',ctx:'Muž ~45, celou dobu přikyvoval, u podpisu couvá. Není proti — jen se bojí rozhodnout.',c:'Rozhodování',a:'Nerozhodný',keys:['perfektní','oceňuji','co konkrétně','promyslet'],tip:'„Perfektní, oceňuji, že neděláte unáhlená rozhodnutí. Co konkrétně si potřebujete promyslet — cenu, instalaci, nebo něco jiného?“'},
+ {o:'Nemám rád změny.',ctx:'Pán ~65, pohodlný, u jednoho operátora celý život. Změna = riziko.',c:'Loajalita',a:'Věrný zákazník',keys:['chápu','dávno','na druhou stranu','nic neměníte'],tip:'„To naprosto chápu — kdybyste změnu chtěl, dávno byste ji udělal. Na druhou stranu: vaše zvyky se nemění, jen linka pod nimi bude spolehlivější.“'},
+ {o:'Raději to podepíšu na prodejně.',ctx:'Žena ~55, opatrná na podpisy doma u dveří. Zájem má, důvěru ne.',c:'Důvěra',a:'Skeptik',keys:['rozumím','prodejn','připravím','doklad','zavolat'],tip:'„Rozumím, na prodejně je příjemné prostředí. Připravím vám to tam — jen ověřím: jste starší 18 let a máte platný doklad? A kdy vám zítra můžeme zavolat pro potvrzení?“'},
+ {o:'Poradím se s kamarádem, on tomu rozumí.',ctx:'Muž ~40, nejistý v technice, deleguje rozhodnutí na známého „ajťáka“.',c:'Rozhodování',a:'Nerozhodný',keys:['rozumím','dovysvětlit','jednoduše','co konkrétně'],tip:'„Rozumím. Co z toho vám můžu dovysvětlit hned teď — klidně jednoduše, jako bych to vysvětloval svému kamarádovi? Co konkrétně by kamaráda zajímalo?“'},
+ {o:'Nechte mi leták, já se ozvu.',ctx:'Muž ~45, dveře už přivírá, nataženou rukou si říká o leták.',c:'Únik',a:'„Pošlete e-mail“',keys:['zakroužku','konkrétní','ozvu se já','termín'],tip:'„Nechám — a zakroužkuji vám jedinou věc, která se týká vašeho domu. A ozvu se radši já: hodí se úterý, nebo čtvrtek?“'},
 ];
 
 /* ================= DRIL FRÁZÍ ================= */
@@ -2062,19 +2045,16 @@ Odpověď prodejce (přepis řeči): „${tx}“
 Hodnoť i to, zda odpověď sedí k situaci (typ zákazníka, spěch, nálada) — univerzální fráze bez adaptace na situaci stáhni o body.
 Metodický vzorec TOS: ocenění/potvrzení → přerámování → otázka nebo konkrétní další krok.
 Etický kodex (tvrdá pravidla, při porušení skore max 20): žádné pomlouvání konkurence, žádné zavádějící informace, žádné zamlčení konečné ceny či vrtání.
-PŘIJATELNÉ VZOROVÉ ODPOVĚDI PRO TUTO NÁMITKU (kalibrace — jde o rozmezí toho, co je „vzorové", ne jedinou správnou větu; podobně kvalitní odpověď v jiných slovech hodnoť stejně vysoko):
-${item.tips.map(t=>'- '+t).join('\n')}
 ${buildCalibration({})}${buildMaterials()}
 Vrať POUZE validní JSON:
-{"skore":0,"zpetna_vazba":"1–2 věty česky, konkrétně co zlepšit nebo co bylo dobře"}`,'drill_eval');
+{"skore":0,"zpetna_vazba":"1–2 věty česky, konkrétně co zlepšit nebo co bylo dobře","lepsi_verze":"vzorová odpověď 1–2 věty v přirozené mluvené češtině"}`,'drill_eval');
     if(typeof out.skore!=='number') throw new Error('bad json');
-    out.lepsi_verze=pick(item.tips);
   }catch(e){
     D.offline=true;
     const s=heurScore(tx,item.keys);
     out={skore:s,
       zpetna_vazba:s>=70?'Silná odpověď — je tam potvrzení i otázka. Tohle si zapamatuj a používej.':(s>=50?'Dobrý základ. Přidej zjišťovací otázku nebo konkrétní další krok, ať rozhovor pokračuje.':'Odpověď sklouzla k produktu nebo byla moc krátká. Vzorec: potvrď → zvědavost/otázka → další krok.'),
-      lepsi_verze:pick(item.tips)};
+      lepsi_verze:item.tip};
   }
   out.skore=Math.max(0,Math.min(100,Math.round(out.skore)));
   if(D.retryMode){
