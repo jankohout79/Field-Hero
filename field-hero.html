@@ -1457,8 +1457,9 @@ function heurScore(tx,keys){
    V tomto demu běží všechna volání na Sonnet 4.6 (pravidlo prostředí artefaktů). */
 const MODEL_TIERS={drill_eval:'claude-sonnet-4-6',customer:'claude-sonnet-4-6',deep_coach:'claude-sonnet-4-6'};
 const PROD_MODEL_TIERS={drill_eval:'claude-haiku-4-5',customer:'claude-sonnet-4-6',deep_coach:'claude-fable-5'};
+const CLAUDE_PROXY_URL='https://field-hero-proxy.field-hero-jkh79.workers.dev/v1/messages';
 async function askClaude(prompt,tier='customer'){
-  const res=await fetch('https://api.anthropic.com/v1/messages',{
+  const res=await fetch(CLAUDE_PROXY_URL,{
     method:'POST',headers:{'Content-Type':'application/json'},
     body:JSON.stringify({model:MODEL_TIERS[tier]||'claude-sonnet-4-6',max_tokens:1000,messages:[{role:'user',content:prompt}]})
   });
@@ -2247,7 +2248,7 @@ function matUpload(ev){
       toast('Extrahuji obsah PDF přes AI…');
       try{
         const b64=rd.result.split(',')[1];
-        const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},
+        const res=await fetch(CLAUDE_PROXY_URL,{method:'POST',headers:{'Content-Type':'application/json'},
           body:JSON.stringify({model:MODEL_TIERS.deep_coach,max_tokens:1000,messages:[{role:'user',content:[
             {type:'document',source:{type:'base64',media_type:'application/pdf',data:b64}},
             {type:'text',text:'Vytáhni z dokumentu vše podstatné pro trénink podomního prodeje T-Mobile (fakta, čísla, argumenty, pravidla) jako stručné odrážky v češtině. Jen odrážky, nic jiného.'}]}]})});

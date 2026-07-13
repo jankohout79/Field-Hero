@@ -1,0 +1,8 @@
+name = "field-hero-proxy"
+main = "src/index.js"
+compatibility_date = "2025-01-01"
+workers_dev = true
+preview_urls = false
+
+[vars]
+ALLOWED_ORIGIN = "https://jankohout79.github.io"
