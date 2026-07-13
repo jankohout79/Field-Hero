@@ -313,22 +313,16 @@ function vWelcome(){
 const ASSESS = [
   { q:'Zazvoníš. Dveře se pootevřou: „Dobrý den… co si přejete?“ Muž ~45 si tě měří pohledem. Máš 10 vteřin. Řekni nahlas (nebo napiš), co bys odpověděl.',
     tag:'Prvních 10 vteřin · Elegantní zahájení', skill:'Otvírák',
-    fase:'Toto JE prvotní kontakt na prahu — zákazník tě ještě nezná.',
-    criteria:'(1) představení jménem a firmou (ideálně i průkaz), (2) jasný důvod návštěvy (např. oznámení ve vchodě), (3) respekt k jeho času (naznačí, že to bude krátké), (4) žádná zmínka o ceně/akci/slevě hned na začátku. Chybějící představení nebo důvod návštěvy je zde oprávněný a závažný nedostatek.',
     keys:['jmenuji|jsem|novák|t-mobile|osobně|průkaz','oznámení|vchod|dům|domě|nárok|výhod|soused|ulic','vteřin|chvilk|nezdržím|krátce'],
     penalty:'akce|sleva|299|nabíz|nezajímalo',
     model:'„Dobrý den, Novák, T-Mobile Osobně — tady průkaz. Jsem tu na základě oznámení ve vchodě: mám každému předat, na jaké výhody má nárok. Zdržím vás jen chvilku.“ (kdo jsem + proč tu jsem + respekt k času, žádný produkt ani cena)' },
   { q:'Zákazník se ptá: „Jaký je vlastně rozdíl mezi optikou a tím, co mám teď přes vzduch?“ Odpověz mu.',
     tag:'Znalost Fiber', skill:'Fiber Knowledge',
-    fase:'Toto NENÍ prvotní kontakt — rozhovor už běží, zákazník se sám doptává na techniku. Prodejce se představovat ani znovu zahajovat nemá.',
-    criteria:'(1) srozumitelné, věcně správné vysvětlení výhody optiky (stabilita, nezávislost na počasí/zatížení sítě), (2) žádné pomlouvání konkurence ani prázdné superlativy ("nejlepší", "garantuju"), (3) navázání zjišťovací otázkou místo jen přednášky. NEHODNOŤ chybějící představení ani zahájení — v této fázi se to neočekává.',
     keys:['světl|vlákn|až k vám|k vám domů|vlastní','stabil|nezávis|počasí|kolik lidí|výpad','kolik zařízení|co doma|jak funguje|k čemu|vyhovuje'],
     penalty:'nejlepší|garantuju|prostě',
     model:'„Optika vede signál světlem až k vám domů — stabilita a odezva nezávisí na počasí ani na tom, kolik lidí je online. Kolik zařízení u vás běží najednou?“ (konkrétní benefit + zjišťovací otázka)' },
   { q:'Jsi uvnitř. Vidíš velkou TV, konzoli a dva notebooky. Co řekneš jako první?',
     tag:'Čtení prostředí · Zjišťování', skill:'Discovery',
-    fase:'Toto NENÍ prvotní kontakt — prodejce už byl pozván dovnitř, dveře i představení proběhly dříve. Zahájení se zde nehodnotí.',
-    criteria:'(1) všimnutí si konkrétního detailu v domácnosti (TV, notebooky, konzole), (2) přirozený přechod na zjišťovací otázku místo okamžité nabídky balíčku/ceny, (3) otázka působí jako přirozený zájem, ne prodejní tlak. NEHODNOŤ chybějící představení ani zahájení — v této fázi se to neočekává.',
     keys:['vidím|všiml|máte tu|hodně zařízení|dost zařízení','jak zvládá|jak funguje|když jste online|najednou|večer','[?]'],
     penalty:'nabídnu|balíček|rovnou|spočítám',
     model:'„Vidím, že u vás běží dost zařízení najednou. Jak zvládá připojení, když jste online všichni?“ (respektující postřeh → přirozená zjišťovací otázka, ne okamžitá nabídka)' },
@@ -388,14 +382,10 @@ async function assessEval(tx,dur){
   let out;
   try{
     out=await askClaude(
-`Jsi přísný trenér první ligy podomního prodeje T-Mobile CZ. Hodnotíš MLUVENOU odpověď prodejce.
-FÁZE ROZHOVORU: ${a.tag}
-KONTEXT FÁZE: ${a.fase}
+`Jsi přísný trenér první ligy podomního prodeje T-Mobile CZ. Hodnotíš MLUVENOU odpověď prodejce v situaci u dveří.
 SITUACE: ${a.q}
 ODPOVĚĎ PRODEJCE (přepis řeči): „${tx}“
-KRITÉRIA HODNOCENÍ PRO TUTO KONKRÉTNÍ FÁZI (hodnoť POUZE podle nich, nevymýšlej si další požadavky mimo ně): ${a.criteria}
-Vždy navíc platí etický kodex T-Mobile Osobně: nikdy nepomlouvej konkurenci, nikdy neuváděj cenu/slevu bez konečné ceny.
-Škála skóre: 0–20 slabá/chybná odpověď, 21–50 částečná (chybí klíčový prvek kritérií), 51–75 dobrá s drobnou mezerou, 76–100 vzorová odpověď.
+Hodnoť podle metodiky (Elegantní zahájení: kdo jsem + proč tu jsem + respekt k času; analýza dřív než nabídka; zjišťovací otázka; etický kodex: bez pomluv konkurence a bez ceníku v úvodu).
 ${buildCalibration({})}${buildMaterials()}
 Vrať POUZE validní JSON:
 {"skore":0,"fb":"1–2 věty česky, konkrétně co bylo dobře a co zlepšit"}`,'drill_eval');
