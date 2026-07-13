@@ -1,0 +1,2314 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Field Hero — AI kouč pro D2D prodej</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --magenta:#E20074;
+  --magenta-hi:#FF2E92;
+  --magenta-dim:rgba(226,0,116,.14);
+  --bg:#0D0C10;
+  --card:#17151C;
+  --card2:#1F1C25;
+  --line:#2A2733;
+  --text:#F6F4F9;
+  --muted:#9B94A8;
+  --faint:#6C6678;
+  --green:#2FD180;
+  --green-dim:rgba(47,209,128,.14);
+  --amber:#FFB020;
+  --amber-dim:rgba(255,176,32,.13);
+  --red:#FF5A6E;
+  --red-dim:rgba(255,90,110,.13);
+  --blue:#5B8DEF;
+  --radius:18px;
+  --disp:'Space Grotesk',sans-serif;
+  --body:'Inter',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  background:#060509;
+  font-family:var(--body);
+  color:var(--text);
+  display:flex;align-items:center;justify-content:center;
+  min-height:100vh;
+}
+body::before{
+  content:"";position:fixed;inset:0;
+  background:radial-gradient(60% 40% at 70% 0%,rgba(226,0,116,.10),transparent 60%),
+             radial-gradient(50% 35% at 10% 100%,rgba(91,141,239,.06),transparent 60%);
+  pointer-events:none;
+}
+#phone{
+  width:100%;max-width:420px;height:100vh;max-height:920px;
+  background:var(--bg);
+  position:relative;overflow:hidden;
+  display:flex;flex-direction:column;
+}
+@media(min-width:480px){
+  #phone{border-radius:36px;border:1px solid #26232e;box-shadow:0 40px 120px rgba(0,0,0,.7);height:88vh}
+}
+#screen{flex:1;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;position:relative}
+#screen::-webkit-scrollbar{display:none}
+.pad{padding:22px 20px 110px}
+.pad-flow{padding:22px 20px 40px}
+
+/* ---------- tab bar ---------- */
+#tabbar{
+  position:absolute;bottom:0;left:0;right:0;z-index:50;
+  display:flex;justify-content:space-around;align-items:center;
+  padding:10px 8px calc(14px + env(safe-area-inset-bottom));
+  background:linear-gradient(180deg,rgba(13,12,16,0) 0%,rgba(13,12,16,.92) 30%,#0D0C10 100%);
+  backdrop-filter:blur(10px);
+}
+.tab{
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  font-size:10.5px;font-weight:600;color:var(--faint);
+  background:none;border:none;cursor:pointer;font-family:var(--body);
+  padding:6px 10px;border-radius:12px;transition:color .15s;
+}
+.tab svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tab.active{color:var(--magenta-hi)}
+.tab.active svg{filter:drop-shadow(0 0 8px rgba(226,0,116,.5))}
+
+/* ---------- typography ---------- */
+h1,h2,h3,.disp{font-family:var(--disp)}
+.eyebrow{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--magenta-hi)}
+.eyebrow.mut{color:var(--faint)}
+.h-lg{font-size:26px;font-weight:700;letter-spacing:-.02em;line-height:1.15}
+.h-md{font-size:19px;font-weight:700;letter-spacing:-.01em}
+.h-sm{font-size:15px;font-weight:700}
+.sub{font-size:13.5px;color:var(--muted);line-height:1.5}
+.tiny{font-size:11px;color:var(--faint)}
+
+/* ---------- cards & buttons ---------- */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:14px}
+.card.hot{background:linear-gradient(135deg,#22101c 0%,#17151C 55%);border-color:rgba(226,0,116,.35)}
+.card.flat{background:var(--card2)}
+.btn{
+  display:flex;align-items:center;justify-content:center;gap:8px;width:100%;
+  padding:15px;border-radius:15px;border:none;cursor:pointer;
+  font-family:var(--disp);font-size:15px;font-weight:700;letter-spacing:.01em;
+  background:var(--magenta);color:#fff;transition:transform .12s,filter .15s;
+}
+.btn:active{transform:scale(.975)}
+.btn.ghost{background:var(--card2);color:var(--text);border:1px solid var(--line)}
+.btn.mini{width:auto;padding:9px 16px;font-size:13px;border-radius:11px}
+.btn.green{background:var(--green);color:#06240f}
+.chiprow{display:flex;gap:8px;flex-wrap:wrap}
+.chip{font-size:11.5px;font-weight:600;padding:5px 11px;border-radius:99px;background:var(--card2);border:1px solid var(--line);color:var(--muted)}
+.chip.mag{background:var(--magenta-dim);border-color:rgba(226,0,116,.35);color:var(--magenta-hi)}
+.chip.grn{background:var(--green-dim);border-color:rgba(47,209,128,.3);color:var(--green)}
+.chip.amb{background:var(--amber-dim);border-color:rgba(255,176,32,.3);color:var(--amber)}
+.chip.red{background:var(--red-dim);border-color:rgba(255,90,110,.3);color:var(--red)}
+
+/* ---------- bars, rings, funnel ---------- */
+.bar{height:8px;border-radius:99px;background:var(--card2);overflow:hidden;position:relative}
+.bar>i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--magenta),var(--magenta-hi));transition:width .8s cubic-bezier(.2,.8,.2,1)}
+.bar>i.grn{background:linear-gradient(90deg,#1FA866,var(--green))}
+.bar>i.amb{background:linear-gradient(90deg,#D98E0F,var(--amber))}
+.bar>i.red{background:linear-gradient(90deg,#D33B4E,var(--red))}
+.skillrow{display:flex;align-items:center;gap:12px;margin-bottom:11px}
+.skillrow .lbl{width:130px;font-size:12.5px;font-weight:600;color:var(--muted);flex-shrink:0}
+.skillrow .bar{flex:1}
+.skillrow .val{width:30px;text-align:right;font-family:var(--disp);font-weight:700;font-size:13px}
+
+.funnel-step{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+.funnel-step .fbarwrap{flex:1;height:34px;background:var(--card2);border-radius:9px;overflow:hidden;position:relative}
+.funnel-step .fbar{height:100%;border-radius:9px;background:linear-gradient(90deg,rgba(226,0,116,.85),rgba(255,46,146,.55));display:flex;align-items:center;padding-left:12px;font-family:var(--disp);font-weight:700;font-size:13.5px;min-width:44px;transition:width .8s ease}
+.funnel-step .fname{width:118px;font-size:11.5px;font-weight:600;color:var(--muted);flex-shrink:0;line-height:1.25}
+.fconv{display:flex;align-items:center;gap:6px;margin:2px 0 8px 130px;font-size:11px;color:var(--faint)}
+.fconv b{font-family:var(--disp)}
+.fconv.weak b{color:var(--red)}
+.fconv.strong b{color:var(--green)}
+
+.ring{position:relative;display:inline-flex;align-items:center;justify-content:center}
+.ring svg{transform:rotate(-90deg)}
+.ring .rv{position:absolute;text-align:center;font-family:var(--disp)}
+
+/* ---------- misc ---------- */
+.row{display:flex;align-items:center;gap:12px}
+.row.between{justify-content:space-between}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 12px 10px}
+.stat .sv{font-family:var(--disp);font-size:20px;font-weight:700}
+.stat .sl{font-size:10.5px;color:var(--faint);font-weight:600;margin-top:2px;line-height:1.3}
+.avatar{width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--magenta),#7A1FA2);display:flex;align-items:center;justify-content:center;font-family:var(--disp);font-weight:700;font-size:16px;flex-shrink:0}
+.avatar.sm{width:34px;height:34px;font-size:13px}
+.backbtn{display:inline-flex;align-items:center;gap:6px;background:none;border:none;color:var(--muted);font-family:var(--body);font-size:13px;font-weight:600;cursor:pointer;padding:0;margin-bottom:16px}
+.divider{height:1px;background:var(--line);margin:14px 0}
+.listitem{display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid var(--line);cursor:pointer}
+.listitem:last-child{border-bottom:none}
+.icobox{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;background:var(--card2)}
+.icobox.mag{background:var(--magenta-dim)}
+.icobox.grn{background:var(--green-dim)}
+.icobox.amb{background:var(--amber-dim)}
+
+/* checklist */
+.check{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--card);border:1px solid var(--line);border-radius:14px;margin-bottom:9px;cursor:pointer;transition:border-color .15s}
+.check .box{width:24px;height:24px;border-radius:8px;border:2px solid var(--faint);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;transition:all .15s}
+.check.done{border-color:rgba(47,209,128,.4)}
+.check.done .box{background:var(--green);border-color:var(--green);color:#06240f;font-weight:800}
+.check .ct{font-size:13.5px;font-weight:600}
+.check.done .ct{color:var(--muted);text-decoration:line-through}
+
+/* roleplay chat */
+.bubble{max-width:82%;padding:12px 14px;border-radius:16px;font-size:13.5px;line-height:1.5;margin-bottom:10px;animation:pop .25s ease}
+.bubble.cust{background:var(--card2);border:1px solid var(--line);border-bottom-left-radius:5px;margin-right:auto}
+.bubble.me{background:var(--magenta);border-bottom-right-radius:5px;margin-left:auto}
+.bubble.sys{background:none;border:1px dashed var(--line);color:var(--muted);font-size:12px;max-width:100%;text-align:center}
+.choice{display:block;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 14px;color:var(--text);font-family:var(--body);font-size:13px;line-height:1.45;margin-bottom:9px;cursor:pointer;transition:border-color .15s,transform .1s}
+.choice:hover{border-color:var(--magenta)}
+.choice:active{transform:scale(.98)}
+@keyframes pop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes fadeup{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.fade{animation:fadeup .4s ease both}
+.fade.d1{animation-delay:.06s}.fade.d2{animation-delay:.12s}.fade.d3{animation-delay:.18s}.fade.d4{animation-delay:.24s}
+
+/* heatmap */
+.hm{display:grid;grid-template-columns:86px repeat(4,1fr);gap:4px;font-size:10px}
+.hm .hh{color:var(--faint);font-weight:700;text-align:center;padding:4px 0;line-height:1.2}
+.hm .hn{color:var(--muted);font-weight:600;display:flex;align-items:center;font-size:11px}
+.hm .hc{border-radius:7px;height:32px;display:flex;align-items:center;justify-content:center;font-family:var(--disp);font-weight:700;font-size:11.5px}
+
+/* toast */
+#toast{position:absolute;left:50%;bottom:96px;transform:translateX(-50%) translateY(20px);background:#241f2e;border:1px solid var(--magenta);color:var(--text);padding:11px 18px;border-radius:99px;font-size:13px;font-weight:600;opacity:0;transition:all .3s;z-index:99;white-space:nowrap;box-shadow:0 8px 30px rgba(226,0,116,.3)}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+.demo-note{font-size:10px;color:var(--faint);text-align:center;margin-top:6px}
+.badge-xp{font-family:var(--disp);font-weight:700;font-size:12px;color:var(--amber);background:var(--amber-dim);padding:3px 9px;border-radius:99px}
+select,input[type=number],input[type=text]{background:var(--card2);border:1px solid var(--line);border-radius:11px;color:var(--text);font-family:var(--body);font-size:14px;padding:10px 12px;width:100%}
+.stepper{display:flex;align-items:center;justify-content:space-between;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin-bottom:9px}
+.stepper .sbtn{width:34px;height:34px;border-radius:10px;background:var(--card2);border:1px solid var(--line);color:var(--text);font-size:18px;font-weight:700;cursor:pointer}
+.stepper .snum{font-family:var(--disp);font-weight:700;font-size:17px;min-width:34px;text-align:center}
+.stepper .snm{font-size:12.5px;font-weight:600;color:var(--muted);flex:1}
+
+/* voice */
+.micwrap{display:flex;flex-direction:column;align-items:center;gap:10px;padding:14px 0}
+.micbtn{width:76px;height:76px;border-radius:50%;border:none;cursor:pointer;background:var(--magenta);color:#fff;font-size:30px;display:flex;align-items:center;justify-content:center;transition:transform .12s;box-shadow:0 8px 30px rgba(226,0,116,.35)}
+.micbtn:active{transform:scale(.94)}
+.micbtn.rec{background:var(--red);animation:pulse 1.4s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(255,90,110,.55)}70%{box-shadow:0 0 0 24px rgba(255,90,110,0)}100%{box-shadow:0 0 0 0 rgba(255,90,110,0)}}
+.michint{font-size:12px;color:var(--muted);font-weight:600;text-align:center}
+.livetx{min-height:40px;width:100%;background:var(--card2);border:1px dashed var(--line);border-radius:14px;padding:11px 14px;font-size:13.5px;line-height:1.5;color:var(--text)}
+.coachnote{font-size:11.5px;line-height:1.5;color:var(--amber);background:var(--amber-dim);border-radius:10px;padding:8px 11px;margin:-4px 0 12px;max-width:88%}
+.metline{font-size:10.5px;color:var(--faint);text-align:right;margin:-6px 0 10px}
+.ttsbtn{background:var(--card2);border:1px solid var(--line);border-radius:99px;color:var(--muted);font-size:11.5px;font-weight:700;padding:6px 12px;cursor:pointer;font-family:var(--body)}
+.ttsbtn.on{color:var(--magenta-hi);border-color:rgba(226,0,116,.4);background:var(--magenta-dim)}
+.spin{width:18px;height:18px;border:2.5px solid var(--line);border-top-color:var(--magenta-hi);border-radius:50%;animation:rot .8s linear infinite;display:inline-block;vertical-align:middle}
+@keyframes rot{to{transform:rotate(360deg)}}
+.drillobj{font-family:var(--disp);font-size:21px;font-weight:700;line-height:1.35;margin:10px 0 4px}
+textarea.fallback{width:100%;background:var(--card2);border:1px solid var(--line);border-radius:14px;color:var(--text);font-family:var(--body);font-size:13.5px;padding:11px 14px;min-height:74px;resize:none}
+.phaserow{display:flex;gap:5px;align-items:center;margin:2px 0 12px}
+.phasedot{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px}
+.phasedot .pd{width:100%;height:5px;border-radius:99px;background:var(--card2);transition:background .3s}
+.phasedot.on .pd{background:linear-gradient(90deg,var(--magenta),var(--magenta-hi))}
+.phasedot .pl{font-size:8.5px;font-weight:700;color:var(--faint);letter-spacing:.02em}
+.phasedot.on .pl{color:var(--magenta-hi)}
+.ratebar{background:var(--card);border:1px solid rgba(255,176,32,.35);border-radius:14px;padding:12px;margin:4px 0 12px}
+.ratebtn{background:var(--card2);border:1px solid var(--line);border-radius:10px;color:var(--text);font-size:13px;padding:7px 12px;cursor:pointer;font-family:var(--body)}
+.ratebtn.up{border-color:rgba(47,209,128,.6);background:var(--green-dim)}
+.ratebtn.down{border-color:rgba(255,90,110,.6);background:var(--red-dim)}
+.tagbtn{font-size:10.5px;font-weight:600;padding:4px 9px;border-radius:99px;background:var(--card2);border:1px solid var(--line);color:var(--muted);cursor:pointer;font-family:var(--body)}
+.tagbtn.on{background:var(--amber-dim);border-color:rgba(255,176,32,.5);color:var(--amber)}
+.star{font-size:26px;cursor:pointer;filter:grayscale(1);transition:filter .15s}
+.star.on{filter:none}
+@media(prefers-reduced-motion:reduce){.micbtn.rec{animation:none}.fade{animation:none}}
+</style>
+</head>
+<body>
+<div id="phone">
+  <div id="screen"></div>
+  <nav id="tabbar"></nav>
+  <div id="toast"></div>
+</div>
+<script>
+/* ================= STATE ================= */
+const S = {
+  screen: 'welcome',
+  onboarded: false,
+  name: 'David',
+  level: 4, levelName: 'PRŮZKUMNÍK',
+  xp: 1240, xpNext: 1600,
+  streak: 6,
+  league: { name: 'Stříbrná liga', pos: 3, of: 24 },
+  skills: [
+    ['Připravenost do terénu', 82], ['První dojem', 76], ['Otvírák rozhovoru', 54],
+    ['Vstup za dveře', 41], ['Zjišťování potřeb', 72], ['Znalost Fiber', 91],
+    ['Magenta TV nabídka', 58], ['Práce s námitkami', 47], ['Uzavírání', 64], ['Cross-sell', 42],
+  ],
+  funnel: { doors: 46, opened: 29, conv: 18, meaningful: 9, inside: 4, offers: 3, sales: 2 },
+  products: { fiber: 2, tv: 1, bundle: 1 },
+  readyDone: [],
+  missionSteps: [false,false,false,false],
+  assessIdx: 0, assessScore: 0, aState:'ask', aLast:null,
+  rpStep: 0, rpScore: 0, rpLog: [],
+  tipTried: {},
+};
+
+const $ = id => document.getElementById(id);
+function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._x); t._x=setTimeout(()=>t.classList.remove('show'),2200); }
+function addXP(n){ S.xp+=n; toast('+'+n+' XP 🎉'); stSaveSoon(); }
+function go(sc, keepScroll){ S.screen=sc; render(); if(!keepScroll) $('screen').scrollTop=0; }
+function pct(a,b){ return b? Math.round(a/b*100) : 0; }
+function fmt(n){ return n.toLocaleString('cs-CZ'); }
+
+/* ================= SVG helpers ================= */
+function ring(val, size=64, stroke=6, color='var(--magenta-hi)', label=''){
+  const r=(size-stroke)/2, c=2*Math.PI*r, off=c*(1-val/100);
+  return `<div class="ring" style="width:${size}px;height:${size}px">
+    <svg width="${size}" height="${size}">
+      <circle cx="${size/2}" cy="${size/2}" r="${r}" stroke="var(--card2)" stroke-width="${stroke}" fill="none"/>
+      <circle cx="${size/2}" cy="${size/2}" r="${r}" stroke="${color}" stroke-width="${stroke}" fill="none"
+        stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${off}"/>
+    </svg>
+    <div class="rv"><div style="font-size:${size/3.6}px;font-weight:700">${val}</div>${label?`<div style="font-size:9px;color:var(--faint);font-weight:600">${label}</div>`:''}</div>
+  </div>`;
+}
+function skillColor(v){ return v>=70?'grn':(v>=55?'amb':'red'); }
+function skillBar(name,val){
+  return `<div class="skillrow"><div class="lbl">${name}</div><div class="bar"><i class="${skillColor(val)}" style="width:${val}%"></i></div><div class="val">${val}</div></div>`;
+}
+const ICONS = {
+  today:'<svg viewBox="0 0 24 24"><path d="M12 3l2.4 4.9 5.4.8-3.9 3.8.9 5.4-4.8-2.5-4.8 2.5.9-5.4L4.2 8.7l5.4-.8z"/></svg>',
+  learn:'<svg viewBox="0 0 24 24"><path d="M4 19V6a2 2 0 012-2h13v13H6a2 2 0 00-2 2zm0 0a2 2 0 002 2h13"/><path d="M9 8h6"/></svg>',
+  sell:'<svg viewBox="0 0 24 24"><path d="M3 17l5-6 4 4 6-8"/><path d="M14 7h4v4"/></svg>',
+  community:'<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.6-3 2.9-4.6 5.5-4.6S13.9 16 14.5 19"/><circle cx="17" cy="9" r="2.4"/><path d="M15.6 14.6c2.4.1 4.3 1.5 4.9 4.4"/></svg>',
+  profile:'<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.6"/><path d="M5 20c.8-3.6 3.6-5.5 7-5.5s6.2 1.9 7 5.5"/></svg>',
+};
+
+/* ================= TAB BAR ================= */
+const TABS=[['today','Dnes'],['learn','Učení'],['sell','Prodej'],['community','Komunita'],['profile','Profil']];
+const TAB_MAP={ ready:'today',mission:'today',lesson:'learn',lesson2:'learn',products:'learn',winthedoor:'learn',archetypes:'learn',archetype:'learn',roleplay:'learn',rpresult:'learn',rpsetup:'learn',voicerp:'learn',voicerpresult:'learn',drill:'learn',entry:'sell',bottleneck:'sell',earnings:'sell',tip:'community',league:'community',team:'profile',studio:'profile',aitrain:'profile',studioResult:'profile' };
+function renderTabbar(){
+  const active = TAB_MAP[S.screen] || S.screen;
+  const hide = !S.onboarded;
+  $('tabbar').style.display = hide?'none':'flex';
+  $('tabbar').innerHTML = TABS.map(([k,l])=>`
+    <button class="tab ${active===k?'active':''}" onclick="go('${k}')">${ICONS[k]}<span>${l}</span></button>`).join('');
+}
+
+/* ================= WELCOME + ASSESSMENT ================= */
+function vWelcome(){
+  return `<div class="pad-flow" style="display:flex;flex-direction:column;min-height:100%;justify-content:flex-end">
+    <div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:flex-start">
+      <div class="fade" style="font-family:var(--disp);font-weight:700;font-size:13px;letter-spacing:.22em;color:var(--magenta-hi);margin-bottom:14px">T&nbsp;·&nbsp;FIELD&nbsp;HERO</div>
+      <h1 class="h-lg fade d1" style="font-size:34px;margin-bottom:14px">Tvůj osobní<br>prodejní kouč.<br><span style="color:var(--magenta-hi)">Každý den.</span></h1>
+      <p class="sub fade d2" style="max-width:300px">Zjisti, co dnes zlepšit, bezpečně si to natrénuj s AI zákazníkem, vyzkoušej v terénu — a uvidíš, jestli to skutečně funguje.</p>
+      <div class="chiprow fade d3" style="margin-top:22px">
+        <span class="chip mag">Fiber internet</span><span class="chip mag">Magenta TV</span><span class="chip">D2D prodej</span>
+      </div>
+    </div>
+    <button class="btn fade d4" onclick="go('assess')">Začít vstupní diagnostiku</button>
+    <p class="tiny fade d4" style="text-align:center;margin-top:12px">3 minuty · přizpůsobí ti celou aplikaci</p>
+  </div>`;
+}
+
+const ASSESS = [
+  { q:'Zazvoníš. Dveře se pootevřou: „Dobrý den… co si přejete?“ Muž ~45 si tě měří pohledem. Máš 10 vteřin. Řekni nahlas (nebo napiš), co bys odpověděl.',
+    tag:'Prvních 10 vteřin · Elegantní zahájení', skill:'Otvírák',
+    keys:['jmenuji|jsem|novák|t-mobile|osobně|průkaz','oznámení|vchod|dům|domě|nárok|výhod|soused|ulic','vteřin|chvilk|nezdržím|krátce'],
+    penalty:'akce|sleva|299|nabíz|nezajímalo',
+    model:'„Dobrý den, Novák, T-Mobile Osobně — tady průkaz. Jsem tu na základě oznámení ve vchodě: mám každému předat, na jaké výhody má nárok. Zdržím vás jen chvilku.“ (kdo jsem + proč tu jsem + respekt k času, žádný produkt ani cena)' },
+  { q:'Zákazník se ptá: „Jaký je vlastně rozdíl mezi optikou a tím, co mám teď přes vzduch?“ Odpověz mu.',
+    tag:'Znalost Fiber', skill:'Fiber Knowledge',
+    keys:['světl|vlákn|až k vám|k vám domů|vlastní','stabil|nezávis|počasí|kolik lidí|výpad','kolik zařízení|co doma|jak funguje|k čemu|vyhovuje'],
+    penalty:'nejlepší|garantuju|prostě',
+    model:'„Optika vede signál světlem až k vám domů — stabilita a odezva nezávisí na počasí ani na tom, kolik lidí je online. Kolik zařízení u vás běží najednou?“ (konkrétní benefit + zjišťovací otázka)' },
+  { q:'Jsi uvnitř. Vidíš velkou TV, konzoli a dva notebooky. Co řekneš jako první?',
+    tag:'Čtení prostředí · Zjišťování', skill:'Discovery',
+    keys:['vidím|všiml|máte tu|hodně zařízení|dost zařízení','jak zvládá|jak funguje|když jste online|najednou|večer','[?]'],
+    penalty:'nabídnu|balíček|rovnou|spočítám',
+    model:'„Vidím, že u vás běží dost zařízení najednou. Jak zvládá připojení, když jste online všichni?“ (respektující postřeh → přirozená zjišťovací otázka, ne okamžitá nabídka)' },
+];
+function vAssess(){
+  const i=S.assessIdx, a=ASSESS[i];
+  const sup=speechSupported();
+  if(S.aState==='eval'){
+    return `<div class="pad-flow"><div class="row between" style="margin-bottom:18px"><span class="eyebrow">Vstupní diagnostika</span><span class="tiny">${i+1} / ${ASSESS.length}</span></div>
+      <div class="bar" style="margin-bottom:22px"><i style="width:${i/ASSESS.length*100}%"></i></div>
+      <div class="michint" style="padding:40px 0"><span class="spin"></span> &nbsp;Kouč hodnotí tvou odpověď…</div></div>`;
+  }
+  if(S.aState==='fb'){
+    const L=S.aLast;
+    return `<div class="pad-flow"><div class="row between" style="margin-bottom:18px"><span class="eyebrow">Vstupní diagnostika</span><span class="tiny">${i+1} / ${ASSESS.length}</span></div>
+      <div class="bar" style="margin-bottom:20px"><i style="width:${(i+1)/ASSESS.length*100}%"></i></div>
+      <div class="bubble me" style="max-width:100%">${L.tx}</div>
+      ${L.m&&L.m.wpm?`<div class="metline">${tempoLabel(L.m.wpm)}${L.m.fillers?' · '+L.m.fillers+'× výplňové slovo':''}</div>`:''}
+      <div class="card" style="margin-top:4px"><div class="row" style="gap:14px">
+        ${ring(L.skore,60,6,L.skore>=70?'var(--green)':L.skore>=50?'var(--amber)':'var(--red)')}
+        <p style="flex:1;font-size:12.5px;line-height:1.55">${L.fb}</p></div></div>
+      <div class="card flat"><span class="eyebrow mut">Jak by to řekl špičkový obchodník</span>
+        <p style="font-size:12.5px;line-height:1.6;margin-top:8px;color:var(--muted)">${a.model}</p></div>
+      <button class="btn" onclick="assessNext()">${i<ASSESS.length-1?'Další situace ›':'Zobrazit mapu dovedností'}</button>
+    </div>`;
+  }
+  let input;
+  if(S.aState==='rec'){
+    input=`<div class="livetx" id="aLive">…poslouchám</div><div class="micwrap"><button class="micbtn rec" onclick="stopRec()">■</button><div class="michint">Klepni pro odeslání</div></div>`;
+  } else {
+    const useVoice=sup&&!S.forceText;
+    input=`<div class="micwrap" style="margin-top:8px">
+      ${useVoice?`<button class="micbtn" onclick="assessRec()">🎤</button><div class="michint">Řekni odpověď nahlas — jako doopravdy u dveří</div><button class="ttsbtn" onclick="toggleText()">✍️ raději napíšu</button>`
+      :`<textarea class="fallback" id="aText" placeholder="Napiš, co bys řekl zákazníkovi…"></textarea><button class="btn mini" onclick="assessSend()">Odeslat odpověď</button>${sup?'<button class="ttsbtn" onclick="toggleText()">🎤 zpět na mluvení</button>':''}`}
+    </div>`;
+  }
+  return `<div class="pad-flow">
+    <div class="row between" style="margin-bottom:18px">
+      <span class="eyebrow">Vstupní diagnostika</span>
+      <span class="tiny">${i+1} / ${ASSESS.length}</span>
+    </div>
+    <div class="bar" style="margin-bottom:22px"><i style="width:${i/ASSESS.length*100}%"></i></div>
+    <span class="chip mag" style="margin-bottom:14px;display:inline-block">${a.tag}</span>
+    <div class="card hot"><p style="font-size:14px;font-weight:600;line-height:1.5">${a.q}</p></div>
+    ${input}
+    <p class="tiny" style="text-align:center;margin-top:14px">Neexistuje jedna správná věta — hodnotíme, jak improvizuješ vlastními slovy.</p>
+  </div>`;
+}
+function assessRec(){
+  S.aState='rec'; render(true);
+  startRec('aLive',(tx,dur)=>{ if(!tx){ S.aState='ask'; render(true); return; } assessEval(tx,dur); });
+}
+function assessSend(){ const el=$('aText'); const tx=(el&&el.value.trim())||''; if(!tx){ toast('Napiš odpověď'); return; } assessEval(tx,0); }
+async function assessEval(tx,dur){
+  const a=ASSESS[S.assessIdx]; const m=dur>0?speechMetrics(tx,dur):null;
+  S.aState='eval'; render();
+  let out;
+  try{
+    out=await askClaude(
+`Jsi přísný trenér první ligy podomního prodeje T-Mobile CZ. Hodnotíš MLUVENOU odpověď prodejce v situaci u dveří.
+SITUACE: ${a.q}
+ODPOVĚĎ PRODEJCE (přepis řeči): „${tx}“
+Hodnoť podle metodiky (Elegantní zahájení: kdo jsem + proč tu jsem + respekt k času; analýza dřív než nabídka; zjišťovací otázka; etický kodex: bez pomluv konkurence a bez ceníku v úvodu).
+${buildCalibration({})}${buildMaterials()}
+Vrať POUZE validní JSON:
+{"skore":0,"fb":"1–2 věty česky, konkrétně co bylo dobře a co zlepšit"}`,'drill_eval');
+    if(typeof out.skore!=='number') throw 0;
+  }catch(e){
+    const t=' '+tx.toLowerCase()+' '; let s=38;
+    a.keys.forEach(grp=>{ const re=new RegExp(grp); if(re.test(t)) s+=17; });
+    if(new RegExp(a.penalty).test(t.trim().slice(0,60))) s-=18;
+    const n=tx.split(/\s+/).filter(Boolean).length; if(n<4) s-=20; if(n>70) s-=6;
+    s=Math.max(12,Math.min(96,s));
+    out={skore:s, fb:s>=70?'Silná odpověď — má strukturu i tah. Přesně tímhle směrem.':(s>=50?'Dobrý základ. Chybí ještě jeden prvek metodiky — porovnej s modelovou odpovědí níže.':'Tady je prostor: vrať se ke struktuře kdo jsem → proč tu jsem → otázka. Porovnej s modelem níže.')};
+  }
+  out.skore=Math.max(0,Math.min(100,Math.round(out.skore)));
+  S.assessScore+=out.skore; S.aLast={tx,m,skore:out.skore,fb:out.fb};
+  S.aState='fb'; render();
+}
+function assessNext(){
+  S.assessIdx++; S.aState='ask'; S.aLast=null;
+  if(S.assessIdx>=ASSESS.length){ S.aState='ask'; go('skillmap'); } else render();
+}
+function vSkillmap(){
+  return `<div class="pad-flow">
+    <span class="eyebrow">Výsledek diagnostiky</span>
+    <h1 class="h-lg" style="margin:8px 0 6px">Tvoje prodejní<br>mapa dovedností</h1>
+    <p class="sub" style="margin-bottom:20px">Kombinace testu znalostí, scénářů a AI vyhodnocení. Skóre se dál zpřesňuje podle reálných výsledků v terénu.</p>
+    <div class="card fade">
+      ${S.skills.map(s=>skillBar(s[0],s[1])).join('')}
+    </div>
+    <div class="card hot fade d1">
+      <span class="eyebrow">Co z toho plyne</span>
+      <p style="font-size:14px;font-weight:600;line-height:1.55;margin-top:8px">Jsi silný v produktu i uvnitř domácnosti. Největší příležitost: <span style="color:var(--magenta-hi)">vstup za dveře</span> — proměnit krátký rozhovor na prahu v pozvání dovnitř.</p>
+    </div>
+    <button class="btn fade d2" onclick="finishOnboard()">Vytvořit můj 30denní plán</button>
+  </div>`;
+}
+function finishOnboard(){ S.onboarded=true; addXP(150); stSave(); go('today'); }
+
+/* ================= TODAY ================= */
+function vToday(){
+  const f=S.funnel;
+  const xpPct = Math.min(100, Math.round(S.xp/S.xpNext*100));
+  const done = S.missionSteps.filter(Boolean).length;
+  return `<div class="pad">
+    <div class="row between" style="margin-bottom:20px">
+      <div class="row" style="gap:12px">
+        <div class="avatar">D</div>
+        <div>
+          <div class="h-sm disp">Ahoj, ${S.name} 👋</div>
+          <div class="tiny">Level ${S.level} · ${S.levelName} · ${S.league.name} #${S.league.pos}</div>
+        </div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-family:var(--disp);font-weight:700;font-size:16px">🔥 ${S.streak}</div>
+        <div class="tiny">dní v řadě</div>
+      </div>
+    </div>
+
+    <div class="row" style="gap:10px;margin-bottom:16px">
+      <div class="bar" style="flex:1"><i style="width:${xpPct}%"></i></div>
+      <span class="badge-xp">${fmt(S.xp)} / ${fmt(S.xpNext)} XP</span>
+    </div>
+
+    <div class="card hot fade">
+      <div class="row between">
+        <span class="eyebrow">Tvoje dnešní mise</span>
+        <span class="chip mag">${done}/4</span>
+      </div>
+      <h2 class="h-md" style="margin:10px 0 6px">Získej 30 vteřin navíc</h2>
+      <p class="sub">Tvoje největší příležitost je udržet pozornost zaneprázdněných zákazníků na prahu dveří.</p>
+      <div class="divider"></div>
+      <div class="tiny" style="margin-bottom:6px;font-weight:700;letter-spacing:.08em">PROČ PRÁVĚ TOHLE?</div>
+      <p style="font-size:12.5px;color:var(--muted);line-height:1.55">Uvnitř uzavíráš <b style="color:var(--green)">52 %</b> příležitostí, ale jen <b style="color:var(--red)">21 %</b> otevřených dveří proměníš v rozhovor (benchmark kolegů: 27 %).</p>
+      <button class="btn mini" style="margin-top:12px" onclick="go('mission')">Spustit Power Session · 9 min</button>
+    </div>
+
+    <div class="card fade d1">
+      <div class="row between" style="margin-bottom:6px">
+        <span class="eyebrow mut">Příprava do terénu</span>
+        <span class="chip ${S.readyDone.length>=10?'grn':'amb'}">${S.readyDone.length>=10?'Hotovo ✓':'60 vteřin'}</span>
+      </div>
+      <div class="row between">
+        <p class="sub" style="max-width:210px">Rychlý rituál před první zvonkem — vzhled, výbava, energie.</p>
+        <button class="btn ghost mini" onclick="go('ready')">Otevřít</button>
+      </div>
+    </div>
+
+    <h3 class="h-sm fade d2" style="margin:6px 0 12px">Dnešní výkon v terénu</h3>
+    <div class="grid3 fade d2" style="margin-bottom:10px">
+      <div class="stat"><div class="sv">${f.doors}</div><div class="sl">Zvonění</div></div>
+      <div class="stat"><div class="sv">${f.opened}</div><div class="sl">Otevřené dveře</div></div>
+      <div class="stat"><div class="sv">${f.conv}</div><div class="sl">Rozhovory</div></div>
+    </div>
+    <div class="grid3 fade d2" style="margin-bottom:14px">
+      <div class="stat"><div class="sv">${f.inside}</div><div class="sl">Pozvání dovnitř</div></div>
+      <div class="stat"><div class="sv" style="color:var(--magenta-hi)">${f.sales}</div><div class="sl">Prodeje</div></div>
+      <div class="stat"><div class="sv" style="color:var(--amber)">${fmt(S.products.fiber*4000+S.products.tv*1500)} Kč</div><div class="sl">Odhad provize*</div></div>
+    </div>
+
+    <div class="card flat fade d3">
+      <div class="row" style="gap:10px;align-items:flex-start">
+        <div class="icobox mag">💡</div>
+        <p style="font-size:13px;line-height:1.55"><b>Chybí ti 2 prodeje Fiber</b> k překonání tvého nejlepšího týdne. Tvoje konverze uvnitř je výborná — dnes se soustřeď na to, dostat víc lidí do plného rozhovoru.</p>
+      </div>
+    </div>
+    <div class="row" style="gap:10px">
+      <button class="btn ghost" onclick="go('entry')">＋ Zapsat výsledky</button>
+      <button class="btn ghost" onclick="go('sell')">Můj trychtýř</button>
+    </div>
+    <p class="demo-note">* Demo výpočet dle provizní přílohy 7/26: Fiber mass ≈ 4 000 Kč, IPTV S–XL ≈ 1 500 Kč.</p>
+  </div>`;
+}
+
+/* ================= POWER SESSION (mission) ================= */
+const MISSION = [
+  ['📖','Koncept: Vytváření zvědavosti','2 min · Proč první věta nesmí prodávat', 20],
+  ['🎬','Top prodejce: Jak Petra získá 30 s navíc','2 min · Video z komunity', 20],
+  ['🤖','AI trénink: Zaneprázdněný profesionál','3 min · Hlasový role-play', 40, 'roleplay'],
+  ['🎯','Terénní mise: 10 dveří s novým otvírákem','Dnes v terénu · zapiš výsledek večer', 30],
+];
+function vMission(){
+  return `<div class="pad">
+    <button class="backbtn" onclick="go('today')">‹ Dnes</button>
+    <span class="eyebrow">Power Session · 9 min</span>
+    <h1 class="h-lg" style="margin:8px 0 6px">Získej 30 vteřin navíc</h1>
+    <p class="sub" style="margin-bottom:18px">Čtyři malé kroky. Každý má důvod — a večer se podíváme, jestli to v terénu zafungovalo.</p>
+    ${MISSION.map((m,i)=>{
+      const done=S.missionSteps[i];
+      return `<div class="card ${done?'':'fade'}" style="${done?'border-color:rgba(47,209,128,.4)':''}">
+        <div class="row between">
+          <div class="row" style="gap:12px">
+            <div class="icobox ${done?'grn':'mag'}">${done?'✓':m[0]}</div>
+            <div>
+              <div style="font-size:14px;font-weight:700">${m[1]}</div>
+              <div class="tiny" style="margin-top:2px">${m[2]}</div>
+            </div>
+          </div>
+          ${done?'<span class="chip grn">+'+m[3]+' XP</span>':`<button class="btn mini" onclick="doMission(${i})">Start</button>`}
+        </div>
+      </div>`;
+    }).join('')}
+    ${S.missionSteps.every(Boolean)?`<div class="card hot"><h3 class="h-sm">Mise splněna 🏆</h3><p class="sub" style="margin-top:6px">Zítra se podíváme, jak se pohnula tvoje konverze „otevřeno → rozhovor“. Zatím: <b style="color:var(--green)">rané pozitivní signály</b>.</p></div>`:''}
+  </div>`;
+}
+function doMission(i){
+  if(MISSION[i][4]==='roleplay'){ startRoleplay(true); return; }
+  S.missionSteps[i]=true; addXP(MISSION[i][3]); render();
+}
+
+/* ================= READY FOR THE FIELD ================= */
+const READY = [
+  ['👔','Čisté a vhodné oblečení'],['👟','Čisté boty'],['🪪','Brand oblečení + šňůrka s ID kartou (kodex)'],
+  ['💇','Upravený vzhled'],['🎒','Srovnaná výbava'],
+  ['🔋','Nabitý telefon + powerbanka'],['📄','Magentový blok, propiska, nabitý tablet'],['🏢','Souhlas SVJ / správce se vstupem ověřen'],['📜','Ověřen zákaz podomního prodeje v obci (vyhláška)'],['📱','Digitální nástroje fungují'],
+  ['🧍','Reset postoje — ramena dolů, brada nahoru'],['😊','Kontrola úsměvu + energie hlasu'],
+];
+function vReady(){
+  const n=S.readyDone.length;
+  return `<div class="pad">
+    <button class="backbtn" onclick="go('today')">‹ Dnes</button>
+    <div class="row between" style="margin-bottom:6px">
+      <span class="eyebrow">Připraven do terénu?</span>
+      ${ring(Math.round(n/READY.length*100),54,5)}
+    </div>
+    <h1 class="h-lg" style="margin-bottom:4px">Rituál před zápasem</h1>
+    <p class="sub" style="margin-bottom:16px">60 vteřin jako sportovec před výkonem — ne firemní checklist.</p>
+    ${READY.map((r,i)=>{
+      const d=S.readyDone.includes(i);
+      return `<div class="check ${d?'done':''}" onclick="toggleReady(${i})"><div class="box">${d?'✓':''}</div><div style="font-size:17px">${r[0]}</div><div class="ct">${r[1]}</div></div>`;
+    }).join('')}
+    <div class="card flat" style="margin-top:14px">
+      <span class="eyebrow mut">Jaká je dnes tvoje energie?</span>
+      <div class="row" style="gap:8px;margin-top:10px">
+        <button class="btn ghost mini" style="flex:1" onclick="energy('low')">🔻 Nízká</button>
+        <button class="btn ghost mini" style="flex:1" onclick="energy('mid')">➖ Střední</button>
+        <button class="btn ghost mini" style="flex:1" onclick="energy('high')">🔺 Vysoká</button>
+      </div>
+      <div id="energyTip"></div>
+    </div>
+    ${n===READY.length?`<button class="btn green" onclick="addXP(30);go('today')">Jsem připraven — do terénu! 💪</button>`:''}
+  </div>`;
+}
+function toggleReady(i){
+  const k=S.readyDone.indexOf(i);
+  if(k>=0) S.readyDone.splice(k,1); else S.readyDone.push(i);
+  stSaveSoon(); render(true);
+}
+function energy(lvl){
+  const tips={
+    low:'<b>Rozjezdová rutina:</b> první 3 dveře jsou zahřívací. Neprodávej — tvoje jediná mise je vytvořit 3 rozhovory. Před prvním zvonkem si nahlas přehraj otvírák.',
+    mid:'Dobrý základ. Dej si mikro-cíl: první pozvání dovnitř do 60 minut. Pak jedeš na vlně.',
+    high:'Skvělé! Pozor jen na tempo řeči — vysoká energie svádí ke spěchu. Nech zákazníka chvíli se zorientovat.'
+  };
+  $('energyTip').innerHTML='<p style="font-size:12.5px;color:var(--muted);line-height:1.55;margin-top:12px">'+tips[lvl]+'</p>';
+}
+function render(keep){ /* placeholder replaced later */ }
+
+/* ================= LEARN ================= */
+const PATHS = [
+  ['🚪','Vyhraj dveře','5 kroků prodeje · tvoje priorita: krok 2',41,'winthedoor',true],
+  ['🎩','Elegantní zahájení','Kdo jsem → proč tu jsem → „pojďme se posadit"',54,'winthedoor'],
+  ['❓','Analýza: 3 typy otázek','Informativní · Problémové · Na přání',61,'lesson2'],
+  ['🧑‍🤝‍🧑','Zákaznické archetypy','14 typů zákazníků + AI trénink',52,'archetypes'],
+  ['🛡️','Práce s námitkami','Vzorec: ocenění → přerámování → otázka',47,'lesson'],
+  ['📦','Produktová akademie','T-Fiber · FTTx · Magenta TV Plus · Magenta 1',74,'products'],
+  ['🧮','Modelace nabídky','Magnetový papír: co máte teď vs. nová nabídka',49,'products'],
+  ['📶','Wifi Manager & Security','Dveřní otvíráky pro rodiny',58,'products'],
+  ['🤝','Uzavření a verifikace','Podpis → verifikace TOS → objednávka',64,'products'],
+  ['🏆','Cesta k Team Leaderovi','Pro seniorní prodejce',22,'winthedoor']
+];
+function vLearn(){
+  return `<div class="pad">
+    <span class="eyebrow">Učení</span>
+    <h1 class="h-lg" style="margin:8px 0 16px">Strom dovedností</h1>
+    <div class="card hot fade">
+      <div class="row between">
+        <div>
+          <span class="chip mag" style="margin-bottom:8px;display:inline-block">Doporučeno AI koučem</span>
+          <div class="h-sm">🎤 AI role-play: Zaneprázdněný profesionál</div>
+          <p class="tiny" style="margin-top:4px">Tvůj nejtěžší archetyp · skóre 42/100 · mluvíš nahlas</p>
+        </div>
+        <button class="btn mini" onclick="startRoleplay()">Hrát</button>
+      </div>
+    </div>
+    <div class="card fade" style="border-color:rgba(255,176,32,.35)">
+      <div class="row between">
+        <div>
+          <span class="chip amb" style="margin-bottom:8px;display:inline-block">Denní dril · 2 min</span>
+          <div class="h-sm">⚡ Dril frází: námitky nahlas</div>
+          <p class="tiny" style="margin-top:4px">5 náhodných námitek · odpovídáš mluvením · knihovna ${OBJ_LIB.length} frází</p>
+        </div>
+        <button class="btn mini" style="background:var(--amber);color:#2a1c00" onclick="startDrill()">Start</button>
+      </div>
+    </div>
+    ${PATHS.map((p,i)=>`
+      <div class="listitem fade" style="animation-delay:${i*.04}s" onclick="go('${p[4]}')">
+        <div class="icobox ${p[5]?'mag':''}">${p[0]}</div>
+        <div style="flex:1">
+          <div class="row between">
+            <div style="font-size:13.5px;font-weight:700">${p[1]} ${p[5]?'<span class="chip mag" style="font-size:9px;padding:2px 7px;margin-left:4px">PRIORITA</span>':''}</div>
+            <div style="font-family:var(--disp);font-weight:700;font-size:12.5px;color:var(--${p[3]>=70?'green':p[3]>=55?'amber':'red'})">${p[3]}</div>
+          </div>
+          <div class="tiny" style="margin:3px 0 6px">${p[2]}</div>
+          <div class="bar" style="height:5px"><i class="${skillColor(p[3])}" style="width:${p[3]}%"></i></div>
+        </div>
+      </div>`).join('')}
+  </div>`;
+}
+
+/* ================= WIN THE DOOR ================= */
+function vWinTheDoor(){
+  const kroky=[['1','Příprava','vzhled, výbava, souhlas SVJ, vyhláška'],['2','Elegantní zahájení','kdo jsem → proč tu jsem → posadit se'],['3','Analýza','3 typy otázek + magnetový papír'],['4','Modelace','srovnání: co máte teď vs. nová nabídka'],['5','Uzavření','podpis → verifikace → objednávka']];
+  return `<div class="pad">
+    <button class="backbtn" onclick="go('learn')">‹ Učení</button>
+    <span class="eyebrow">Metodika TOS</span>
+    <h1 class="h-lg" style="margin:8px 0 6px">Vyhraj dveře</h1>
+    <p class="sub" style="margin-bottom:16px">Prvním cílem <b style="color:var(--text)">není představit produkt.</b> Cílem 2. kroku je dostat se s zákazníkem ke stolu — „pojďme se k tomu posadit".</p>
+
+    <div class="card fade">
+      <span class="eyebrow mut">5 kroků prodeje</span>
+      <div style="margin-top:12px">
+      ${kroky.map((k,i)=>`
+        <div class="row" style="gap:12px;margin-bottom:2px">
+          <div style="display:flex;flex-direction:column;align-items:center">
+            <div style="width:26px;height:26px;border-radius:50%;background:${i===1?'var(--magenta)':'var(--card2)'};display:flex;align-items:center;justify-content:center;font-family:var(--disp);font-weight:700;font-size:11px;color:${i===1?'#fff':'var(--muted)'}">${k[0]}</div>
+            ${i<4?'<div style="width:2px;height:16px;background:var(--line)"></div>':''}
+          </div>
+          <div style="padding-top:3px"><div style="font-size:13px;font-weight:700">${k[1]} ${i===1?'<span class="chip red" style="font-size:9px;padding:2px 7px;margin-left:4px">TVŮJ BOTTLENECK</span>':''}</div><div class="tiny">${k[2]}</div></div>
+        </div>`).join('')}
+      </div>
+    </div>
+
+    <div class="card hot fade d1">
+      <span class="eyebrow">Elegantní zahájení — stavební bloky</span>
+      <div style="margin-top:10px;font-size:12.5px;line-height:1.7;color:var(--muted)">
+        <b style="color:var(--text)">1 · KDO JSEM</b> — jméno + „zástupce specializovaného oddělení T-Mobile Osobně" + průkaz<br>
+        <b style="color:var(--text)">2 · PROČ TU JSEM</b> — oznámení ve vchodě / dohoda se správcem: „předat informace o možnostech optické sítě a výhodách"<br>
+        <b style="color:var(--text)">3 · OVĚŘENÍ</b> — „Viděl jste ho?" (ano → „to jste mi ulehčil práci" / ne → „to nevadí")<br>
+        <b style="color:var(--text)">4 · CO PO NĚM CHCI</b> — „Pojďme se k tomu rovnou posadit. Budu co nejefektivnější, ať vás nezdržím."
+      </div>
+    </div>
+
+    <div class="card fade d1">
+      <div class="row between" style="margin-bottom:10px">
+        <span class="eyebrow mut">Skóre vstupu za dveře</span>
+        ${ring(41,50,5,'var(--red)')}
+      </div>
+      ${skillBar('Představení (kdo jsem)',72)}
+      ${skillBar('Proč tu jsem (legitimita)',49)}
+      ${skillBar('„Pojďme se posadit"',38)}
+      ${skillBar('Reakce na „nemám zájem"',44)}
+      ${skillBar('Domluvení schůzky (plán B)',31)}
+    </div>
+
+    <div class="card fade d2">
+      <span class="eyebrow mut">Cvičení 1: Kde stát po zazvonění?</span>
+      <p class="sub" style="margin:8px 0 12px">Která pozice vytváří nejpříjemnější první dojem?</p>
+      <div class="grid3">
+        <button class="choice" style="text-align:center;margin:0" onclick="doorEx(0)">🚶<br><span class="tiny">Těsně u dveří</span></button>
+        <button class="choice" style="text-align:center;margin:0" onclick="doorEx(1)">🧍<br><span class="tiny">Krok zpět, ruce viditelné</span></button>
+        <button class="choice" style="text-align:center;margin:0" onclick="doorEx(2)">📋<br><span class="tiny">Bokem, kouká do tabletu</span></button>
+      </div>
+      <div id="doorFb"></div>
+    </div>
+
+    <div class="card fade d3">
+      <span class="eyebrow mut">Cvičení 2: Zákazník řekne „Já to neřeším."</span>
+      <p class="sub" style="margin:8px 0 12px">Co odpovíš podle metodiky?</p>
+      <button class="choice" onclick="doorEx2(0)">„To nevadí, zaberu vám jen chvilku, uvidíte, že to stojí za to."</button>
+      <button class="choice" onclick="doorEx2(1)">„A kdo to u vás řeší?"</button>
+      <button class="choice" onclick="doorEx2(2)">„Dobře, tak se omlouvám. Hezký den."</button>
+      <div id="doorFb2"></div>
+    </div>
+    <button class="btn" onclick="startRoleplay()">Natrénovat s AI zákazníkem</button>
+  </div>`;
+}
+function doorEx(i){
+  const fb=[
+    ['amb','Příliš blízko působí nátlakově — zákazník se cítí zatlačený do rohu.'],
+    ['grn','Správně! Krok zpět a viditelné ruce = respekt k osobnímu prostoru a signál bezpečí. +15 XP'],
+    ['red','Odvrácený postoj a pohled do zařízení působí nezaujatě — ztrácíš první dojem dřív, než promluvíš.']
+  ][i];
+  if(i===1) addXP(15);
+  $('doorFb').innerHTML=`<p style="font-size:12.5px;line-height:1.5;margin-top:10px;color:var(--${fb[0]==='grn'?'green':fb[0]==='amb'?'amber':'red'})">${fb[1]}</p>`;
+}
+function doorEx2(i){
+  const fb=[
+    ['amb','Slušné, ale mineš podstatu: rozhoduje někdo jiný. Zjisti KDO — jinak přesvědčuješ špatného člověka.'],
+    ['grn','Přesně podle metodiky: „A kdo to u vás řeší?" — jedna otázka a víš, s kým máš mluvit a kdy. +15 XP'],
+    ['red','Vzdal jsi to bez jediné otázky. „Já to neřeším" není odmítnutí — je to informace o rozhodování v domácnosti.']
+  ][i];
+  if(i===1) addXP(15);
+  $('doorFb2').innerHTML=`<p style="font-size:12.5px;line-height:1.5;margin-top:10px;color:var(--${fb[0]==='grn'?'green':fb[0]==='amb'?'amber':'red'})">${fb[1]}</p>`;
+}
+
+/* ================= ARCHETYPES ================= */
+const ARCH = [
+  ['⏰','Zaneprázdněný profesionál',42,'Telefon v ruce, spěchá. Vytvoř okamžitou relevanci a získej svolení ke krátkému rozhovoru.'],
+  ['🤨','Skeptik',71,'Nedůvěřuje, ptá se, kdo tě poslal. Sniž tlak, buď transparentní, pracuj s fakty.'],
+  ['💰','Lovec cen',64,'Ptá se na cenu hned. Nejdřív pochop potřeby, nesoutěž jen cenou.'],
+  ['❤️','Věrný zákazník',38,'„Jsem u operátora 10 let.“ Vytvoř zvědavost bez útoku na konkurenci.'],
+  ['🖥️','Technický expert',81,'Detailní technické dotazy. Uznej expertizu, drž kredibilitu.'],
+  ['👨‍👩‍👧','Manažer domácnosti',75,'Děti, spousta zařízení. Propoj Fiber a Magenta TV s životem rodiny.'],
+  ['🎮','Hráč',77,'Latence, stabilita, upload. Odliš přístupovou síť od domácí Wi-Fi.'],
+  ['📧','„Pošlete mi to e-mailem“',29,'Zdvořilé odmítnutí? Rozliš skutečný zájem a zajisti malý další krok.'],
+  ['😔','Špatná zkušenost',34,'Minulý problém s instalací. Uznej, pochop, obnov důvěru bez přehnaných slibů.'],
+  ['🤫','Tichý zákazník',58,'Krátké odpovědi. Jednoduché otevřené otázky, snes ticho, nemluv za něj.'],
+];
+function vArchetypes(){
+  return `<div class="pad">
+    <button class="backbtn" onclick="go('learn')">‹ Učení</button>
+    <span class="eyebrow">Zákaznické archetypy</span>
+    <h1 class="h-lg" style="margin:8px 0 6px">Tvůj archetypový profil</h1>
+    <p class="sub" style="margin-bottom:16px">Skóre vychází z AI tréninků a reálných výsledků. Nejtěžší typy tě čekají v denním mixu.</p>
+    ${ARCH.map((a,i)=>`
+      <div class="listitem fade" style="animation-delay:${i*.03}s" onclick="openArch(${i})">
+        <div class="icobox">${a[0]}</div>
+        <div style="flex:1">
+          <div class="row between">
+            <div style="font-size:13.5px;font-weight:700">${a[1]}</div>
+            <div style="font-family:var(--disp);font-weight:700;font-size:13px;color:var(--${a[2]>=70?'green':a[2]>=55?'amber':'red'})">${a[2]}</div>
+          </div>
+          <div class="bar" style="height:5px;margin-top:6px"><i class="${skillColor(a[2])}" style="width:${a[2]}%"></i></div>
+        </div>
+      </div>`).join('')}
+    <div class="card flat" style="margin-top:14px">
+      <div class="row" style="gap:10px;align-items:flex-start">
+        <div class="icobox amb">🎯</div>
+        <p style="font-size:13px;line-height:1.55">Tvůj nejtěžší typ je <b>zdvořilé odmítnutí („pošlete e-mail“)</b>. Často ho přijmeš, aniž bys zajistil smysluplný další krok.</p>
+      </div>
+    </div>
+  </div>`;
+}
+let ARCH_SEL=0;
+function openArch(i){ ARCH_SEL=i; go('archetype'); }
+function vArchetype(){
+  const a=ARCH[ARCH_SEL];
+  return `<div class="pad">
+    <button class="backbtn" onclick="go('archetypes')">‹ Archetypy</button>
+    <div class="row" style="gap:14px;margin-bottom:14px">
+      <div class="icobox" style="width:56px;height:56px;font-size:26px">${a[0]}</div>
+      <div>
+        <h1 class="h-md">${a[1]}</h1>
+        <div class="tiny" style="margin-top:3px">Tvoje skóre: <b style="color:var(--${a[2]>=70?'green':a[2]>=55?'amber':'red'})">${a[2]}/100</b></div>
+      </div>
+    </div>
+    <div class="card fade"><span class="eyebrow mut">Cíl rozhovoru</span><p style="font-size:13.5px;line-height:1.55;margin-top:8px">${a[3]}</p></div>
+    <div class="card fade d1">
+      <span class="eyebrow mut">Nejčastější chyby</span>
+      <p class="sub" style="margin-top:8px">· Přeskočení zjišťování a okamžitá prezentace<br>· Snaha „vyhrát“ argumentem místo zvědavostí<br>· Přijetí odmítnutí bez zajištění dalšího kroku</p>
+    </div>
+    <div class="card fade d2">
+      <span class="eyebrow mut">Silné zjišťovací otázky</span>
+      <p class="sub" style="margin-top:8px">· „Kolik zařízení u vás běží najednou?“<br>· „Co vás na současném připojení nejvíc štve?“<br>· „Kdy naposledy vám internet vypadl v nejhorší chvíli?“</p>
+    </div>
+    <button class="btn" onclick="startRoleplay()">🤖 Natrénovat s AI zákazníkem</button>
+  </div>`;
+}
+
+/* ================= AI ROLE-PLAY (jen volný vstup) ================= */
+let RP_FROM_MISSION=false;
+function startRoleplay(fromMission){
+  RP_FROM_MISSION=!!fromMission;
+  VR_SCEN=genScenario(S.ucSel);
+  go('rpsetup');
+}
+
+/* ================= LESSON ================= */
+function vLesson(){
+  return `<div class="pad">
+    <button class="backbtn" onclick="go('learn')">‹ Učení</button>
+    <span class="chip mag" style="display:inline-block;margin-bottom:10px">Práce s námitkami · 5 min · +80 XP</span>
+    <h1 class="h-lg" style="margin-bottom:6px">„Jsem věrný svému poskytovateli"</h1>
+    <p class="sub" style="margin-bottom:16px">Námitka není „ne". Metodický vzorec: <b style="color:var(--text)">ocenění → přerámování → otázka.</b></p>
+    <div class="card fade">
+      <span class="eyebrow mut">Koncept · 1 min</span>
+      <p style="font-size:13.5px;line-height:1.6;margin-top:8px">Nikdy nezpochybňuj zákazníkovu volbu — a <b>nikdy nepomlouvej konkurenci</b> (etický kodex). Nejdřív věrnost oceň, pak polož otázku: <i style="color:var(--magenta-hi)">„Skvělé, věrnost oceňuji. Jaké speciální výhody vám za ni poskytovatel dal?"</i> Ticho po téhle otázce pracuje za tebe.</p>
+    </div>
+    <div class="card fade d1">
+      <span class="eyebrow mut">Najdi chybu v dialogu</span>
+      <div class="bubble cust" style="margin-top:12px">Jsem u svého operátora už deset let a jsem spokojený.</div>
+      <div class="bubble me">Deset let? Tak to určitě přeplácíte — oni na věrné zákazníky kašlou a stejně budou končit.</div>
+      <p class="sub" style="margin-top:4px">Co bylo špatně?</p>
+      <button class="choice" onclick="lessonFb(0)">Zpochybnil volbu a pomluvil konkurenci — porušil kodex a zákazník teď brání svého operátora</button>
+      <button class="choice" onclick="lessonFb(1)">Mluvil moc dlouho</button>
+      <button class="choice" onclick="lessonFb(2)">Měl rovnou říct cenu naší nabídky</button>
+      <div id="lessonFb"></div>
+    </div>
+    <div class="card fade d2">
+      <span class="eyebrow mut">Vzorové odpovědi z metodiky</span>
+      <div style="margin-top:10px;font-size:12.5px;line-height:1.7;color:var(--muted)">
+        <b style="color:var(--text)">„Musím si to rozmyslet"</b> → „Perfektní, oceňuji, že neděláte unáhlená rozhodnutí. Co konkrétně si potřebujete promyslet?"<br><br>
+        <b style="color:var(--text)">„Nechci vrtání a nepořádek"</b> → „Rozumím, je vidět, že si v bytě udržujete pořádek. Optické vlákno je tenké jako tuha z propisky — a technici po instalaci vždy vše uklidí."<br><br>
+        <b style="color:var(--text)">„Proberu to s partnerkou"</b> → „Výborně. Je partnerka teď doma? Můžeme jí zavolat? Pokud ne, kdy to spolu proberete?"
+      </div>
+    </div>
+    <div class="card flat fade d3">
+      <span class="eyebrow mut">Terénní mise</span>
+      <p style="font-size:13px;line-height:1.55;margin-top:8px">Dnes u <b>3 věrných zákazníků</b> použij vzorec ocenění → otázka na výhody za věrnost. Večer zapiš, kolik z nich pokračovalo v rozhovoru.</p>
+      <button class="btn mini" style="margin-top:10px" onclick="addXP(80);go('learn')">Přijímám misi ✓</button>
+    </div>
+  </div>`;
+}
+function lessonFb(i){
+  const ok=i===0;
+  if(ok) addXP(20);
+  $('lessonFb').innerHTML=`<p style="font-size:12.5px;line-height:1.55;margin-top:6px;color:var(--${ok?'green':'amber'})">${ok
+    ?'Přesně tak — dvojitá chyba. Útok na volbu spouští obranu, a pomluva konkurence („budou končit") je přímé porušení etického kodexu. Správně: oceň věrnost a zeptej se na výhody, které za ni dostal. +20 XP'
+    :'To není jádro problému. Klíčové: zpochybnil volbu a pomluvil konkurenci — kodex to výslovně zakazuje a prodejně to nefunguje.'}</p>`;
+}
+
+/* ================= LEKCE: 3 TYPY OTÁZEK ================= */
+const L2Q=[
+ ['„Stává se vám, že se večer internet znatelně zpomalí, když je celá rodina online?"',1],
+ ['„K čemu doma internet nejčastěji využíváte — je to spíš práce, videa, nebo hry?"',0],
+ ['„Co byste řekli na to, kdyby televize čekala na vás? Jakýkoliv pořad z minulého týdne, kdykoliv máte čas."',2],
+ ['„Jaké máte zkušenosti s podporou u vašeho operátora — je snadné se dovolat?"',0],
+ ['„Jak moc by vám zjednodušilo život mít vše na jedné faktuře a jednoho partnera na všechno?"',2],
+];
+let L2={i:0,ok:0};
+const L2T=['Informativní','Problémová','Na přání'];
+function vLesson2(){
+  if(L2.i>=L2Q.length){
+    const res=L2.ok; const done=res>=4;
+    return `<div class="pad"><button class="backbtn" onclick="L2={i:0,ok:0};go('learn')">‹ Učení</button>
+      <div style="text-align:center;margin:26px 0 18px">${ring(Math.round(res/L2Q.length*100),100,8,done?'var(--green)':'var(--amber)')}
+      <h1 class="h-md" style="margin-top:12px">${res}/${L2Q.length} správně ${done?'· +60 XP 🎉':''}</h1></div>
+      <div class="card"><span class="eyebrow mut">Zapamatuj si</span>
+      <p style="font-size:13px;line-height:1.65;margin-top:8px"><b>Informativní</b> = fakta a současný stav (zákazník zaměřený na data).<br><b>Problémové</b> = nespokojenost a omezení (zákazník hledá řešení).<br><b>Na přání</b> = vize a ideální stav (zákazník motivovaný emocí).<br><br>Podle toho, na které otázky se zákazník rozpovídá, přizpůsob celou prezentaci.</p></div>
+      <button class="btn" onclick="${done?'addXP(60);':''}L2={i:0,ok:0};go('learn')">Hotovo</button></div>`;
+  }
+  const q=L2Q[L2.i];
+  return `<div class="pad">
+    <button class="backbtn" onclick="L2={i:0,ok:0};go('learn')">‹ Učení</button>
+    <span class="eyebrow">Analýza · 3. krok prodeje</span>
+    <h1 class="h-lg" style="margin:8px 0 6px">3 typy otázek</h1>
+    <p class="sub" style="margin-bottom:14px">Úspěšný prodej není o tom, co říkáš ty, ale co zjistíš od zákazníka. Zařaď otázku ke správnému typu.</p>
+    <div class="bar" style="margin-bottom:16px"><i style="width:${L2.i/L2Q.length*100}%"></i></div>
+    <div class="card hot"><div class="drillobj" style="font-size:17px">${q[0]}</div></div>
+    <div class="grid3" style="margin-top:4px">
+      ${L2T.map((t,j)=>`<button class="choice" style="text-align:center;margin:0" onclick="l2Answer(${j})">${['📊','🔧','✨'][j]}<br><span class="tiny">${t}</span></button>`).join('')}
+    </div>
+    <div id="l2fb"></div>
+  </div>`;
+}
+function l2Answer(j){
+  const q=L2Q[L2.i]; const ok=j===q[1];
+  if(ok) L2.ok++;
+  const why=['zjišťuje fakta a současný stav','míří na nespokojenost — zákazník se rozpovídá o problémech','maluje ideální stav a pracuje s emocí'][q[1]];
+  $('l2fb').innerHTML=`<p style="font-size:12.5px;margin-top:12px;color:var(--${ok?'green':'red'})">${ok?'✓ Správně':'✗ Je to '+L2T[q[1]]+' otázka'} — ${why}.</p>`;
+  setTimeout(()=>{L2.i++;render();},1400);
+}
+
+/* ================= PRODUKTOVÁ AKADEMIE ================= */
+function vProducts(){
+  return `<div class="pad">
+    <button class="backbtn" onclick="go('learn')">‹ Učení</button>
+    <span class="eyebrow">Produktová akademie</span>
+    <h1 class="h-lg" style="margin:8px 0 14px">Fakta z manuálu,<br>která prodávají</h1>
+    <div class="card fade">
+      <span class="eyebrow mut">🌐 T-Fiber & FTTx</span>
+      <p style="font-size:12.5px;line-height:1.7;margin-top:8px;color:var(--muted)">
+      · FTTx tarify jsou <b style="color:var(--text)">symetrické</b>: 250/250, 500/500 (akce 299 Kč/12 m), 1000/1000 — killer argument pro home office a gamery (upload!)<br>
+      · Instalace T-Fiber ~2 hodiny, standardně <b style="color:var(--text)">zdarma</b>; vlákno tenké jako tuha z propisky<br>
+      · Modem Premium (Wi-Fi 6, 2,4+5 GHz) 50 Kč/měs · Základ 30 Kč/měs · Bridge bez pronájmu<br>
+      · Bezdrátový internet nabízej <b style="color:var(--text)">jen když FTTH nejde</b> (po stornu technika)</p>
+    </div>
+    <div class="card fade d1">
+      <span class="eyebrow mut">📺 Magenta TV Plus</span>
+      <p style="font-size:12.5px;line-height:1.7;margin-top:8px;color:var(--muted)">
+      · Funguje na <b style="color:var(--text)">jakémkoliv internetu</b> — stačí 5 Mb/s (10 Mb/s pro 2 set-top boxy)<br>
+      · Set-top box: Android, 4K, Bluetooth, 50 Kč/měs<br>
+      · Balíčky přímo s <b style="color:var(--text)">Netflixem, HBO Max nebo Disney+</b> — na „máme Netflix" odpovídej spojením, ne náhradou<br>
+      · Zpětné zhlédnutí = „televize čeká na vás"</p>
+    </div>
+    <div class="card fade d2">
+      <span class="eyebrow mut">🔗 Magenta 1 (konvergence)</span>
+      <p style="font-size:12.5px;line-height:1.7;margin-top:8px;color:var(--muted)">
+      · Propojení mobilních a pevných služeb pod jedním RČ: min. 2, max. 9 služeb<br>
+      · Sleva <b style="color:var(--text)">10–25 %</b> podle počtu služeb (čerpají služby od 399 Kč)<br>
+      · Sdílená data 10 GB (u 20 %) / 15 GB (u 25 %), fungují v celé EU<br>
+      · <b style="color:var(--text)">Náhrada výpadku internetu mobilními daty</b> — skvělý argument na spolehlivost</p>
+    </div>
+    <div class="card fade d3">
+      <span class="eyebrow mut">📶 Wifi Manager & Security — dveřní otvíráky</span>
+      <p style="font-size:12.5px;line-height:1.7;margin-top:8px;color:var(--muted)">
+      · Wifi Manager <b style="color:var(--text)">zdarma</b> v aplikaci Můj T-Mobile: časová pravidla („úkoly 17–18, tablet bez internetu"), internetová pauza, blokace cizích zařízení, sdílení hesla QR kódem<br>
+      · Security je součástí všech tarifů Next — chrání i na mobilních datech<br>
+      · Pro Manažerku domácnosti často silnější otvírák než rychlost</p>
+    </div>
+    <div class="card fade d4">
+      <span class="eyebrow mut">🤝 Uzavření a verifikace</span>
+      <p style="font-size:12.5px;line-height:1.7;margin-top:8px;color:var(--muted)">
+      · Objednávka se zadává <b style="color:var(--text)">až po úspěšné verifikaci</b> (TOS backoffice) — podpis není konec práce se zákazníkem<br>
+      · Řekni zákazníkovi dopředu, že mu zavolají kvůli ověření údajů — snížíš storna<br>
+      · Portace: OKU kód (14 znaků); Cable portace trvá 14 dní od verifikace, samoinstalace<br>
+      · Kodex: vždy <b style="color:var(--text)">konečná cena, proces instalace včetně vrtání, podmínky výpovědi</b></p>
+    </div>
+    <button class="btn" onclick="startDrill()">⚡ Procvičit v drilu námitek</button>
+  </div>`;
+}
+
+/* ================= SELL ================= */
+function vSell(){
+  const f=S.funnel;
+  const stages=[
+    ['Zvonění',f.doors],['Otevřené dveře',f.opened],['Rozhovory',f.conv],
+    ['Smysluplné rozhovory',f.meaningful],['Pozvání dovnitř',f.inside],
+    ['Prezentované nabídky',f.offers],['Objednávky',f.sales]
+  ];
+  const convs=[
+    ['Otevření dveří',pct(f.opened,f.doors),63,''],
+    ['Otevřeno → rozhovor',pct(f.conv,f.opened),75,'weak'],
+    ['Rozhovor → smysluplný',pct(f.meaningful,f.conv),55,''],
+    ['Smysluplný → dovnitř',pct(f.inside,f.meaningful),50,'weak'],
+    ['Dovnitř → prodej',pct(f.sales,f.inside),40,'strong'],
+  ];
+  return `<div class="pad">
+    <span class="eyebrow">Prodej · tento týden</span>
+    <h1 class="h-lg" style="margin:8px 0 16px">Tvůj D2D trychtýř</h1>
+    <div class="card fade">
+      ${stages.map((st,i)=>{
+        const w=Math.max(14,st[1]/stages[0][1]*100);
+        return `<div class="funnel-step"><div class="fname">${st[0]}</div><div class="fbarwrap"><div class="fbar" style="width:${w}%">${st[1]}</div></div></div>`;
+      }).join('')}
+      <div class="divider"></div>
+      <div class="grid3">
+        <div><div class="tiny">Fiber</div><div style="font-family:var(--disp);font-weight:700;font-size:17px">${S.products.fiber}</div></div>
+        <div><div class="tiny">Magenta TV</div><div style="font-family:var(--disp);font-weight:700;font-size:17px">${S.products.tv}</div></div>
+        <div><div class="tiny">Balíčky</div><div style="font-family:var(--disp);font-weight:700;font-size:17px;color:var(--magenta-hi)">${S.products.bundle}</div></div>
+      </div>
+    </div>
+
+    <h3 class="h-sm fade d1" style="margin:4px 0 10px">Konverze mezi kroky</h3>
+    <div class="card fade d1">
+      ${convs.map(c=>`
+        <div class="row between" style="margin-bottom:10px">
+          <span style="font-size:12.5px;font-weight:600;color:var(--muted)">${c[0]}</span>
+          <span style="font-family:var(--disp);font-weight:700;font-size:14px;color:var(--${c[3]==='weak'?'red':c[3]==='strong'?'green':'text'})">${c[1]} %
+            <span class="tiny" style="font-weight:600"> / peer ${c[2]} %</span></span>
+        </div>`).join('')}
+    </div>
+
+    <div class="card hot fade d2" onclick="go('bottleneck')" style="cursor:pointer">
+      <div class="row between">
+        <div>
+          <span class="eyebrow">Diagnóza AI kouče</span>
+          <div class="h-sm" style="margin-top:8px">💪 Superschopnost: uvnitř uzavíráš 50 %+</div>
+          <div class="h-sm" style="margin-top:6px;color:var(--red)">🧗 Úzké hrdlo: otevřeno → rozhovor</div>
+        </div>
+        <div style="font-size:20px;color:var(--faint)">›</div>
+      </div>
+    </div>
+    <div class="row" style="gap:10px">
+      <button class="btn ghost" onclick="go('entry')">＋ Zapsat výsledky</button>
+      <button class="btn ghost" onclick="go('earnings')">💰 Výdělek</button>
+    </div>
+    <p class="demo-note">Konverze u malých vzorků ber s rezervou (46 zvonění ≈ orientační data).</p>
+  </div>`;
+}
+
+function vBottleneck(){
+  return `<div class="pad">
+    <button class="backbtn" onclick="go('sell')">‹ Trychtýř</button>
+    <span class="eyebrow">Diagnóza úzkého hrdla</span>
+    <h1 class="h-lg" style="margin:8px 0 16px">Otevřeno → rozhovor</h1>
+    <div class="card fade">
+      <div class="row" style="gap:16px">
+        ${ring(21,84,8,'var(--red)','TY')}
+        ${ring(27,84,8,'var(--faint)','PEER')}
+        <div style="flex:1">
+          <p style="font-size:13px;line-height:1.55">Jen <b style="color:var(--red)">21 %</b> otevřených dveří proměníš v rozhovor. Benchmark srovnatelných kolegů: <b>27 %</b>.</p>
+        </div>
+      </div>
+    </div>
+    <div class="card fade d1">
+      <span class="eyebrow mut">Proč na tom záleží</span>
+      <p style="font-size:13.5px;line-height:1.6;margin-top:8px">Zlepšení z 21 % na 27 % ti při tvé aktivitě přinese <b style="color:var(--magenta-hi)">~6 smysluplných rozhovorů týdně navíc</b>. Při tvé konverzi uvnitř (52 %) to jsou <b>≈ 2 prodeje týdně navíc</b>.</p>
+    </div>
+    <div class="card fade d2">
+      <span class="eyebrow mut">Poznámka k férovosti dat</span>
+      <p class="sub" style="margin-top:8px">Bereme v úvahu i vlivy mimo tebe: typ zástavby, dostupnost sítě, počasí a velikost vzorku. Tohle není známka — je to příležitost.</p>
+    </div>
+    <div class="card hot fade d3">
+      <span class="eyebrow">Doporučená intervence</span>
+      <div style="margin-top:10px;font-size:13px;line-height:2">
+        1️⃣ Koncept: Vytváření zvědavosti · 2 min<br>
+        2️⃣ Video top prodejce: Petra a 30 vteřin navíc<br>
+        3️⃣ AI role-play: Zaneprázdněný profesionál<br>
+        4️⃣ Terénní mise: nový otvírák u 10 dveří<br>
+        5️⃣ Večerní reflexe + měření za 3 směny
+      </div>
+      <button class="btn mini" style="margin-top:12px" onclick="go('mission')">Přidat do dnešní mise</button>
+    </div>
+  </div>`;
+}
+
+/* ================= SALES ENTRY ================= */
+const ENTRY_FIELDS=[['doors','Zvonění'],['opened','Otevřené dveře'],['conv','Rozhovory'],['meaningful','Smysluplné rozhovory'],['inside','Pozvání dovnitř'],['offers','Nabídky'],['sales','Prodeje']];
+function vEntry(){
+  return `<div class="pad">
+    <button class="backbtn" onclick="go('sell')">‹ Zpět</button>
+    <span class="eyebrow">Zápis z terénu</span>
+    <h1 class="h-lg" style="margin:8px 0 6px">Jak šel dnešek?</h1>
+    <p class="sub" style="margin-bottom:16px">30 vteřin večer — a zítřejší koučink bude chytřejší. Zapisuj podepsané smlouvy; objednávka se zadává až po úspěšné verifikaci (TOS backoffice).</p>
+    ${ENTRY_FIELDS.map(e=>`
+      <div class="stepper">
+        <div class="snm">${e[1]}</div>
+        <button class="sbtn" onclick="bump('${e[0]}',-1)">−</button>
+        <div class="snum" id="n_${e[0]}">${S.funnel[e[0]]}</div>
+        <button class="sbtn" onclick="bump('${e[0]}',1)">＋</button>
+      </div>`).join('')}
+    <div class="card flat" style="margin-top:6px">
+      <span class="eyebrow mut">Krátká reflexe</span>
+      <p class="sub" style="margin:8px 0 10px">Fungoval dnes nový otvírák „lokální relevance“?</p>
+      <div class="row" style="gap:8px">
+        <button class="btn ghost mini" style="flex:1" onclick="toast('Zaznamenáno ✓ — signál se počítá do experimentu')">👍 Ano</button>
+        <button class="btn ghost mini" style="flex:1" onclick="toast('Zaznamenáno — zkusíme jinou variantu')">👎 Ne</button>
+      </div>
+    </div>
+    <button class="btn" onclick="saveEntry()">Uložit den · +25 XP</button>
+  </div>`;
+}
+function bump(k,d){ S.funnel[k]=Math.max(0,S.funnel[k]+d); $('n_'+k).textContent=S.funnel[k]; }
+function saveEntry(){ addXP(25); S.missionSteps[3]=true; stSave(); go('sell'); }
+
+/* ================= EARNINGS ================= */
+function vEarnings(){
+  return `<div class="pad">
+    <button class="backbtn" onclick="go('sell')">‹ Trychtýř</button>
+    <span class="eyebrow">Osobní kouč výdělku</span>
+    <h1 class="h-lg" style="margin:8px 0 16px">Cesta k vyšší provizi</h1>
+    <div class="card fade">
+      <div class="row between">
+        <div><div class="tiny">Aktuální tempo (měsíc)</div><div style="font-family:var(--disp);font-weight:700;font-size:26px;margin-top:4px">41 000 Kč</div></div>
+        <div style="text-align:right"><div class="tiny">Projekce konce měsíce</div><div style="font-family:var(--disp);font-weight:700;font-size:20px;color:var(--amber);margin-top:4px">52 500 Kč</div></div>
+      </div>
+      <div class="bar" style="margin-top:14px"><i class="amb" style="width:68%"></i></div>
+      <div class="tiny" style="margin-top:6px">Cíl: 60 000 Kč · demo dle provizní přílohy 7/26 (8× Fiber à 4 000 Kč + 6× IPTV à 1 500 Kč)</div>
+    </div>
+    <div class="card hot fade d1">
+      <span class="eyebrow">Tvoje největší příležitost</span>
+      <p style="font-size:13.5px;line-height:1.6;margin-top:8px">Nejrychlejší cesta k vyššímu výdělku <b>nejsou další dveře</b> — tvoje aktivita je už silná. Největší páka: <b style="color:var(--magenta-hi)">Magenta TV attachment</b> (teď 33 %, top kolegové 55 %).</p>
+    </div>
+    <h3 class="h-sm fade d2" style="margin:4px 0 10px">Co kdybych zlepšil…?</h3>
+    <div class="card fade d2">
+      ${[['Konverzi na rozhovor','+5 p.b.','+2 Fiber','+8 000 Kč'],
+         ['Pozvání dovnitř (k modelaci)','+5 p.b.','+1,5 Fiber','+6 000 Kč'],
+         ['Magenta TV attachment','+10 p.b.','+3 IPTV S–XL','+4 500 Kč']]
+        .map(r=>`<div class="row between" style="margin-bottom:12px">
+          <div><div style="font-size:12.5px;font-weight:700">${r[0]}</div><div class="tiny">${r[1]} / měsíc</div></div>
+          <div style="text-align:right"><div style="font-size:12.5px;font-weight:600;color:var(--muted)">${r[2]}</div><div style="font-family:var(--disp);font-weight:700;color:var(--green)">${r[3]}</div></div>
+        </div>`).join('')}
+      <p class="tiny">Odhady na základě tvého trychtýře za posledních 30 dní. Demo hodnoty.</p>
+    </div>
+    <div class="card flat fade d3">
+      <div class="row" style="gap:10px;align-items:flex-start">
+        <div class="icobox amb">⚠️</div>
+        <p style="font-size:12.5px;line-height:1.55">Pozor na mix: <b>IPTV XS v kombinaci se slevou je provizně −1 000 Kč.</b> Cross-selluj tarify S–XL (à 1 500 Kč) — a XS jen tam, kde dává zákazníkovi smysl.</p>
+      </div>
+    </div>
+    <button class="btn fade d3" onclick="go('lesson')">Spustit trénink TV cross-sell</button>
+  </div>`;
+}
+
+/* ================= COMMUNITY ================= */
+const TIPS=[
+  {id:0,who:'Petra K.',role:'Elite · Praha Východ',ico:'🎬',title:'Jak získám 30 vteřin navíc u zaneprázdněného zákazníka',
+   body:'„Nikdy nezačínám produktem. Řeknu: ,Vidím, že spěcháte — 15 vteřin. Jedna věc o téhle ulici, kterou tu nikdo neví.‘ A pak MLČÍM. To ticho je nejtěžší a nejdůležitější část.“',
+   tried:84,rating:'4,7',evidence:'Ověřeno v terénu',evClass:'grn',signal:'Silnější dokončení zjišťování u těch, kdo tip vyzkoušeli'},
+  {id:1,who:'Marek D.',role:'Senior · Brno',ico:'💬',title:'Odpověď na „pošlete mi to e-mailem“',
+   body:'„Rád pošlu. Ať tam nemáte balast — jde vám spíš o rychlost, nebo o televizi? …A kdy se vám můžu ozvat, jestli to dávalo smysl — čtvrtek, nebo pátek?“ E-mail se mění z úniku na závazek.',
+   tried:41,rating:'4,5',evidence:'Slibné',evClass:'amb',signal:'Sbíráme data z terénních experimentů'},
+  {id:2,who:'Lucie H.',role:'Top improver · Plzeň',ico:'🏠',title:'Otázka na zařízení místo otázky na rychlost',
+   body:'„Neptám se ,jakou máte rychlost‘ — to nikdo neví. Ptám se ,kolik věcí u vás jede najednou, když je večer rodina doma‘. Na to odpoví každý a rovnou mi popíše svůj problém.“',
+   tried:112,rating:'4,8',evidence:'Ověřená praxe',evClass:'grn',signal:'Prokazatelně vyšší míra smysluplných rozhovorů'},
+];
+function vCommunity(){
+  return `<div class="pad">
+    <span class="eyebrow">Komunita</span>
+    <h1 class="h-lg" style="margin:8px 0 4px">Jak top prodejci<br>otevírají dveře</h1>
+    <p class="sub" style="margin-bottom:16px">Tipy z terénu = hypotézy. Aplikace sbírá důkazy, jestli skutečně fungují.</p>
+    <div class="row" style="gap:8px;margin-bottom:16px">
+      <button class="btn ghost mini" onclick="go('league')">🏆 Liga</button>
+      <button class="btn ghost mini" onclick="toast('Týmová výzva: Fiber Friday 18/25 · zbývá 4 h 32 m')">⚡ Fiber Friday 18/25</button>
+    </div>
+    ${TIPS.map((t,i)=>`
+      <div class="card fade" style="animation-delay:${i*.05}s;cursor:pointer" onclick="openTip(${t.id})">
+        <div class="row" style="gap:10px;margin-bottom:10px">
+          <div class="avatar sm">${t.who[0]}</div>
+          <div style="flex:1"><div style="font-size:12.5px;font-weight:700">${t.who}</div><div class="tiny">${t.role}</div></div>
+          <span class="chip ${t.evClass}">${t.evidence}</span>
+        </div>
+        <div class="h-sm" style="font-size:14px;line-height:1.4">${t.ico} ${t.title}</div>
+        <div class="row" style="gap:14px;margin-top:10px">
+          <span class="tiny">🙋 ${t.tried}× vyzkoušeno</span>
+          <span class="tiny">⭐ ${t.rating}/5</span>
+        </div>
+      </div>`).join('')}
+  </div>`;
+}
+let TIP_SEL=0;
+function openTip(i){ TIP_SEL=i; go('tip'); }
+function vTip(){
+  const t=TIPS[TIP_SEL];
+  const tried=S.tipTried[t.id];
+  return `<div class="pad">
+    <button class="backbtn" onclick="go('community')">‹ Komunita</button>
+    <div class="row" style="gap:10px;margin-bottom:14px">
+      <div class="avatar">${t.who[0]}</div>
+      <div><div style="font-size:13.5px;font-weight:700">${t.who}</div><div class="tiny">${t.role}</div></div>
+    </div>
+    <h1 class="h-md" style="margin-bottom:14px">${t.ico} ${t.title}</h1>
+    <div class="card fade"><p style="font-size:14px;line-height:1.65">${t.body}</p></div>
+    <div class="card fade d1">
+      <span class="eyebrow mut">Důkazní skóre</span>
+      <div class="row between" style="margin-top:10px">
+        <span class="chip ${t.evClass}">${t.evidence}</span>
+        <span class="tiny">🙋 ${t.tried}× · ⭐ ${t.rating}/5</span>
+      </div>
+      <p class="sub" style="margin-top:10px">📈 Pozorovaný signál: ${t.signal}.</p>
+    </div>
+    <div class="card flat fade d2">
+      <span class="eyebrow mut">Co dál</span>
+      <div class="row" style="gap:8px;margin-top:10px">
+        <button class="btn ghost mini" style="flex:1" onclick="startRoleplay()">🤖 Natrénovat</button>
+        <button class="btn ghost mini" style="flex:1" onclick="toast('Přidáno do tvého plánu ✓')">＋ Do plánu</button>
+      </div>
+    </div>
+    ${tried
+      ?`<div class="card hot"><p style="font-size:13.5px;font-weight:600">Díky! Tvoje zkušenost se počítá do důkazního skóre tipu. +15 XP 🎉</p></div>`
+      :`<button class="btn" onclick="tryTip(${t.id})">✓ Vyzkoušel jsem to v terénu</button>`}
+  </div>`;
+}
+function tryTip(i){ S.tipTried[i]=true; addXP(15); stSaveSoon(); render(); }
+
+/* ================= LEAGUE ================= */
+function vLeague(){
+  const rows=[
+    ['1','Petra K.','Elite',2140,''],['2','Tomáš V.','Expert',1890,''],
+    ['3','David N. (ty)','Průzkumník',1240,'me'],['4','Lucie H.','Expert',1180,''],
+    ['5','Marek D.','Senior',1050,''],['6','Jana S.','Rookie',890,''],
+  ];
+  return `<div class="pad">
+    <button class="backbtn" onclick="go('community')">‹ Komunita</button>
+    <span class="eyebrow">🥈 ${S.league.name} · tento týden</span>
+    <h1 class="h-lg" style="margin:8px 0 16px">Žebříček</h1>
+    <div class="card fade" style="padding:8px 16px">
+      ${rows.map(r=>`
+        <div class="row between" style="padding:12px 0;border-bottom:1px solid var(--line);${r[4]?'background:var(--magenta-dim);margin:0 -16px;padding:12px 16px;border-radius:12px;border-bottom:none':''}">
+          <div class="row" style="gap:12px">
+            <div style="font-family:var(--disp);font-weight:700;width:20px;color:${r[0]<=3?'var(--amber)':'var(--faint)'}">${r[0]}</div>
+            <div class="avatar sm">${r[1][0]}</div>
+            <div><div style="font-size:13px;font-weight:700">${r[1]}</div><div class="tiny">${r[2]}</div></div>
+          </div>
+          <div style="font-family:var(--disp);font-weight:700;font-size:13.5px">${fmt(r[3])} XP</div>
+        </div>`).join('')}
+    </div>
+    <div class="card flat fade d1">
+      <span class="eyebrow mut">Další kategorie žebříčků</span>
+      <div class="chiprow" style="margin-top:10px">
+        <span class="chip">Nejlepší konverze</span><span class="chip mag">Největší zlepšení</span>
+        <span class="chip">Vstup za dveře</span><span class="chip">Cross-sell</span>
+        <span class="chip">Šampion učení</span><span class="chip">Nováček měsíce</span>
+      </div>
+      <p class="tiny" style="margin-top:10px">Nehodnotíme jen hrubý objem prodejů — zohledňujeme území, tenure a velikost vzorku.</p>
+    </div>
+    <div class="card fade d2">
+      <span class="eyebrow mut">Tvoje odznaky</span>
+      <div class="chiprow" style="margin-top:10px">
+        <span class="chip grn">🌐 První Fiber hrdina</span><span class="chip amb">🔥 7denní série</span>
+        <span class="chip mag">📈 Top improver</span><span class="chip">🚪 Otvírač dveří</span>${S.examPassed?'<span class="chip grn">🎖 Certifikace: Dveře 3/3</span>':''}
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ================= PROFILE ================= */
+function vProfile(){
+  return `<div class="pad">
+    <div class="row" style="gap:14px;margin-bottom:18px">
+      <div class="avatar" style="width:60px;height:60px;font-size:22px">D</div>
+      <div>
+        <h1 class="h-md">David Novák</h1>
+        <div class="tiny" style="margin-top:3px">D2D prodejce · Tým Praha Východ · 47. den</div>
+        <div class="chiprow" style="margin-top:8px"><span class="chip mag">Level ${S.level} · ${S.levelName}</span><span class="chip amb">🔥 ${S.streak} dní</span></div>
+      </div>
+    </div>
+    <div class="grid3 fade" style="margin-bottom:14px">
+      <div class="stat"><div class="sv">${fmt(S.xp)}</div><div class="sl">XP celkem</div></div>
+      <div class="stat"><div class="sv">14</div><div class="sl">Prodejů (měsíc)</div></div>
+      <div class="stat"><div class="sv">#${S.league.pos}</div><div class="sl">${S.league.name}</div></div>
+    </div>
+    <div class="card fade d1">
+      <span class="eyebrow mut">Mapa dovedností</span>
+      <div style="margin-top:12px">${S.skills.slice(0,6).map(s=>skillBar(s[0],s[1])).join('')}</div>
+      <button class="btn ghost mini" style="margin-top:6px" onclick="go('skillmap')">Zobrazit celou mapu</button>
+      <p class="tiny" style="margin-top:8px">Mapa se automaticky zpřesňuje podle tvých tréninků a výsledků.</p>
+    </div>
+    ${S.hist.length?`<div class="card fade d1"><span class="eyebrow mut">Historie tréninků (${S.hist.length})</span>
+      ${S.hist.slice(0,5).map(h=>`<div class="row between" style="padding:8px 0;border-bottom:1px solid var(--line)">
+        <span class="tiny" style="flex:1">${new Date(h.ts).toLocaleDateString('cs-CZ')} · ${h.persona||h.seg}${h.exam?' · 🎖':''}</span>
+        <span class="tiny">🗣 ${h.ratio||'–'} %</span>
+        <span class="tiny" style="font-weight:700;width:70px;text-align:right;color:${h.ok?'var(--green)':'var(--red)'}">fáze ${h.phase}/5 ${h.ok?'✓':'✗'}</span>
+      </div>`).join('')}</div>`:''}
+    <div class="card fade d2">
+      <span class="eyebrow mut">Moje cesta</span>
+      <div style="margin-top:12px;font-size:12.5px;line-height:2.1;color:var(--muted)">
+        🎉 <b style="color:var(--text)">Den 47</b> · Nejlepší týden: 6 prodejů<br>
+        📺 Den 39 · První balíček Fiber + TV<br>
+        🌐 Den 12 · První prodej Fiber<br>
+        🚪 Den 3 · Prvních 10 rozhovorů<br>
+        🚀 Den 1 · První směna v terénu
+      </div>
+    </div>
+    <div class="card flat fade d3">
+      <span class="eyebrow mut">Role a nástroje (demo přepínač)</span>
+      <div class="row" style="gap:8px;margin-top:10px">
+        <button class="btn ghost mini" style="flex:1" onclick="go('team')">👥 Team Coach</button>
+        <button class="btn ghost mini" style="flex:1" onclick="go('studio')">🎛️ Studio</button>
+        <button class="btn ghost mini" style="flex:1" onclick="go('aitrain')">🧠 AI Trénink</button>
+      </div>
+    </div>
+    <div class="card fade d4">
+      <span class="eyebrow mut">Soukromí a data</span>
+      <p class="sub" style="margin-top:8px">Osobní koučovací data slouží jen k personalizaci tvého tréninku. Team leader vidí týmový výkon a heatmapu dovedností — ne tvoje jednotlivé odpovědi. Žádné skryté skórování.</p>
+      <p class="tiny" style="margin-top:10px">${ST_PERSIST?'💾 Profil, XP i historie se ukládají trvale — po návratu pokračuješ, kde jsi skončil.':'⚠ Trvalé úložiště není v tomto prostředí dostupné — profil drží jen tuto relaci.'}</p>
+      <button class="btn ghost mini" style="margin-top:10px" onclick="stReset()">🗑 Vymazat profil a začít znovu</button>
+    </div>
+  </div>`;
+}
+
+/* ================= TEAM COACH ================= */
+function hmColor(v){
+  if(v>=70) return 'background:rgba(47,209,128,.16);color:var(--green)';
+  if(v>=55) return 'background:rgba(255,176,32,.14);color:var(--amber)';
+  return 'background:rgba(255,90,110,.15);color:var(--red)';
+}
+function vTeam(){
+  const team=[
+    ['Petra K.',88,82,79,85],['Tomáš V.',74,61,72,68],['David N.',76,41,72,64],
+    ['Lucie H.',71,58,66,70],['Jana S.',52,38,49,44],['Marek D.',69,55,74,61],
+  ];
+  return `<div class="pad">
+    <button class="backbtn" onclick="go('profile')">‹ Profil</button>
+    <span class="eyebrow">Team Coach · AI copilot</span>
+    <h1 class="h-lg" style="margin:8px 0 16px">Tým Praha Východ</h1>
+    <div class="card hot fade">
+      <span class="eyebrow">Koho dnes koučovat?</span>
+      <p style="font-size:13.5px;line-height:1.6;margin-top:8px">Tým je silný uvnitř domácnosti. Hlavní příležitost: <b style="color:var(--magenta-hi)">konverze otevřeno → rozhovor</b>. <b>4 ze 6</b> prodejců jsou pod benchmarkem.</p>
+      <div class="divider"></div>
+      <div class="tiny" style="font-weight:700;letter-spacing:.08em;margin-bottom:8px">DOPORUČENÁ 15MIN PORADA</div>
+      <div style="font-size:12.5px;line-height:1.9;color:var(--muted)">
+        1. Pusťte dva kontrastní otvíráky (Petra vs. anonymizovaný slabší)<br>
+        2. Diskuze: co vytvořilo relevanci?<br>
+        3. Trénink ve dvojicích: Zaneprázdněný profesionál<br>
+        4. Zadejte experiment: 20 dveří s novým otvírákem
+      </div>
+      <button class="btn mini" style="margin-top:12px" onclick="toast('Trénink přiřazen 6 prodejcům ✓')">Přiřadit týmu</button>
+    </div>
+    <h3 class="h-sm fade d1" style="margin:4px 0 10px">Heatmapa dovedností</h3>
+    <div class="card fade d1">
+      <div class="hm">
+        <div></div><div class="hh">Otvírák</div><div class="hh">Vstup za dveře</div><div class="hh">Zjišťování</div><div class="hh">Uzavírání</div>
+        ${team.map(t=>`<div class="hn">${t[0]}</div>${t.slice(1).map(v=>`<div class="hc" style="${hmColor(v)}">${v}</div>`).join('')}`).join('')}
+      </div>
+      <p class="tiny" style="margin-top:10px">Skóre kombinuje AI tréninky, reálný trychtýř a koučovací zpětnou vazbu.</p>
+    </div>
+    <div class="card fade d2">
+      <span class="eyebrow mut">Vývoj nováčků</span>
+      <div style="margin-top:10px">
+        ${skillBar('Jana S. · den 21 · aktivita',62)}
+        ${skillBar('Jana S. · zapojení do učení',44)}
+      </div>
+      <div class="row" style="gap:10px;align-items:flex-start;margin-top:6px">
+        <div class="icobox amb">⚠️</div>
+        <p style="font-size:12.5px;line-height:1.5;color:var(--muted)">Jana má 3 dny klesající aktivitu a přerušenou sérii. Doporučení: <b style="color:var(--text)">Comeback mise</b> — dnes žádné prodejní cíle, jen 5 dobrých rozhovorů.</p>
+      </div>
+      <button class="btn ghost mini" style="margin-top:10px" onclick="toast('Comeback mise odeslána Janě ✓')">Poslat Comeback misi</button>
+    </div>
+    <div class="card fade d3">
+      <span class="eyebrow mut">Rychlé přehledy</span>
+      <div class="grid3" style="margin-top:10px">
+        <div class="stat"><div class="sv">67 %</div><div class="sl">Dokončení učení</div></div>
+        <div class="stat"><div class="sv" style="color:var(--green)">+3,2</div><div class="sl">p.b. konverze / 30 dní</div></div>
+        <div class="stat"><div class="sv">38 %</div><div class="sl">TV attachment</div></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ================= TRAINING STUDIO ================= */
+let STUDIO_STATE=0;
+function vStudio(){
+  return `<div class="pad">
+    <button class="backbtn" onclick="go('profile')">‹ Profil</button>
+    <span class="eyebrow">Training Studio</span>
+    <h1 class="h-lg" style="margin:8px 0 6px">Z podkladu na trénink<br>za pár minut</h1>
+    <p class="sub" style="margin-bottom:16px">Nahraj cokoliv — nabídku, ceník, skript, PDF, video. AI z toho vytvoří adaptivní učení.</p>
+    ${STUDIO_STATE===0?`
+      <div class="card fade" style="border-style:dashed;text-align:center;padding:30px 16px;cursor:pointer" onclick="studioUpload()">
+        <div style="font-size:34px;margin-bottom:8px">📄</div>
+        <div class="h-sm">Nahrát podklad</div>
+        <p class="tiny" style="margin-top:6px">PDF · PPTX · video · audio · text</p>
+      </div>
+      <div class="card flat fade d1">
+        <span class="eyebrow mut">Ukázka: čeká ve frontě</span>
+        <div class="row" style="gap:10px;margin-top:10px">
+          <div class="icobox mag">☀️</div>
+          <div><div style="font-size:13px;font-weight:700">Nová letní nabídka Fiber</div><div class="tiny">kampan-leto-fiber.pdf · 2,4 MB</div></div>
+        </div>
+        <button class="btn mini" style="margin-top:12px" onclick="studioUpload()">Analyzovat pomocí AI</button>
+      </div>`:''}
+    ${STUDIO_STATE===1?`
+      <div class="card fade" style="text-align:center;padding:34px 16px">
+        <div style="font-size:30px;margin-bottom:10px" class="fade">🧠</div>
+        <div class="h-sm">AI analyzuje podklad…</div>
+        <div class="bar" style="margin-top:16px"><i style="width:70%;animation:fadeup 1.4s ease"></i></div>
+        <p class="tiny" style="margin-top:10px">Identifikuji klíčové znalosti a potřebné dovednosti</p>
+      </div>`:''}
+    ${STUDIO_STATE===2?vStudioResult():''}
+  </div>`;
+}
+function studioUpload(){ STUDIO_STATE=1; render(); setTimeout(()=>{STUDIO_STATE=2; render();},1600); }
+function vStudioResult(){
+  return `
+    <div class="card fade">
+      <div class="row between"><span class="eyebrow">☀️ Nová letní nabídka Fiber</span><span class="chip grn">Analýza hotová</span></div>
+      <div class="divider"></div>
+      <div class="tiny" style="font-weight:700;letter-spacing:.08em;margin-bottom:6px">KLÍČOVÉ ZNALOSTI</div>
+      <div class="chiprow"><span class="chip">Akční cena</span><span class="chip">Období promo</span><span class="chip">Podmínky nároku</span><span class="chip">Rychlosti Fiber</span><span class="chip">Benefity balíčku</span></div>
+      <div class="tiny" style="font-weight:700;letter-spacing:.08em;margin:12px 0 6px">POTŘEBNÉ DOVEDNOSTI</div>
+      <div class="chiprow"><span class="chip mag">Vysvětlení hodnoty</span><span class="chip mag">Promo vs. standardní cena</span><span class="chip mag">Cenové námitky</span><span class="chip mag">TV cross-sell</span></div>
+    </div>
+    <div class="card fade d1">
+      <span class="eyebrow mut">Vygenerovaný trénink · ke schválení</span>
+      <div style="font-size:13px;line-height:2.1;margin-top:8px;color:var(--muted)">
+        📖 3 mikro-lekce &nbsp;·&nbsp; ❓ 8 kvízových otázek<br>
+        🃏 5 kartiček &nbsp;·&nbsp; 🎭 3 zákaznické scénáře<br>
+        🛡️ 2 cvičení na námitky &nbsp;·&nbsp; 🤖 1 AI role-play<br>
+        🎯 1 terénní mise &nbsp;·&nbsp; 🔁 opakovací otázky (spaced repetition)
+      </div>
+      <div class="row" style="gap:8px;margin-top:12px">
+        <button class="btn ghost mini" style="flex:1" onclick="toast('Otevřen editor lekce (demo)')">✏️ Upravit</button>
+        <button class="btn mini" style="flex:1" onclick="toast('Publikováno · cílení: všichni + extra pro nízký TV attachment ✓')">Schválit a publikovat</button>
+      </div>
+    </div>
+    <div class="card fade d2">
+      <span class="eyebrow mut">Cílení publika</span>
+      <div class="chiprow" style="margin-top:10px">
+        <span class="chip mag">Všichni prodejci</span><span class="chip">Nováčci</span><span class="chip mag">Nízký TV attachment</span><span class="chip">Region Praha</span><span class="chip">Slabý vstup za dveře</span>
+      </div>
+    </div>
+    <div class="card fade d3">
+      <span class="eyebrow mut">Efektivita předchozího tréninku</span>
+      <div style="margin-top:10px;font-size:12.5px;line-height:1.5;color:var(--muted)"><b style="color:var(--text)">„Získej 30 vteřin navíc“</b></div>
+      <div class="grid3" style="margin-top:10px">
+        <div class="stat"><div class="sv">87 %</div><div class="sl">Dokončení</div></div>
+        <div class="stat"><div class="sv" style="color:var(--green)">+12</div><div class="sl">AI skóre</div></div>
+        <div class="stat"><div class="sv" style="color:var(--green)">+3,2</div><div class="sl">p.b. konverze</div></div>
+      </div>
+      <div class="row between" style="margin-top:10px">
+        <span class="tiny">Důvěra v dopad</span><span class="chip amb">Střední</span>
+      </div>
+    </div>`;
+}
+
+/* ================= SPEECH HELPERS ================= */
+function speechSupported(){ return !!(window.SpeechRecognition||window.webkitSpeechRecognition); }
+let REC=null, REC_ON=false, REC_T0=0, REC_FINAL='';
+function startRec(liveId, onFinal){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  REC=new SR(); REC.lang='cs-CZ'; REC.interimResults=true; REC.continuous=true;
+  REC_FINAL=''; REC_T0=Date.now(); REC_ON=true;
+  REC.onresult=e=>{
+    let interim='';
+    for(let i=e.resultIndex;i<e.results.length;i++){
+      const t=e.results[i][0].transcript;
+      if(e.results[i].isFinal) REC_FINAL+=t; else interim+=t;
+    }
+    const el=$(liveId); if(el) el.textContent=(REC_FINAL+interim).trim()||'…poslouchám';
+  };
+  REC.onerror=ev=>{ REC_ON=false; if(ev.error==='not-allowed'){ S.forceText=true; toast('Mikrofon není povolen — přepínám na psaní ✍️'); } else toast('Mikrofon: '+ev.error); onFinal(null,0); };
+  REC.onend=()=>{ if(REC_ON){ REC_ON=false; onFinal(REC_FINAL.trim(),(Date.now()-REC_T0)/1000); } };
+  try{ REC.start(); }catch(e){}
+}
+function stopRec(){ if(REC){ try{REC.stop();}catch(e){} } }
+function speak(t){
+  if(!S.tts||!window.speechSynthesis) return;
+  try{ const u=new SpeechSynthesisUtterance(t.replace(/\*[^*]*\*/g,'')); u.lang='cs-CZ'; u.rate=1.02; speechSynthesis.cancel(); speechSynthesis.speak(u); }catch(e){}
+}
+S.tts=false; S.forceText=false;
+function toggleText(){ S.forceText=!S.forceText; render(true); }
+function toggleTts(){ S.tts=!S.tts; render(true); if(S.tts) toast('Zákazník bude číst odpovědi nahlas 🔊'); }
+
+const FILLERS=['ehm','eee','hmm','jakoby','vlastně','prostě','takže','no jo','víte co'];
+function speechMetrics(tx,dur){
+  const words=tx.split(/\s+/).filter(Boolean);
+  const wpm=dur>1?Math.round(words.length/(dur/60)):0;
+  const low=' '+tx.toLowerCase().replace(/[.,!?]/g,'')+' ';
+  let f=0; FILLERS.forEach(w=>{ f+=low.split(' '+w+' ').length-1; });
+  return {n:words.length, wpm, fillers:f, dur:Math.round(dur)};
+}
+function tempoLabel(wpm){
+  if(!wpm) return '';
+  if(wpm<95) return wpm+' slov/min · pomalejší tempo';
+  if(wpm>175) return wpm+' slov/min · ⚠ příliš rychlé';
+  return wpm+' slov/min · dobré tempo ✓';
+}
+function heurScore(tx,keys){
+  const t=' '+tx.toLowerCase()+' '; let s=42;
+  if(/[?]/.test(t) || /\s(jak|kolik|co|kdy|proč|jaké|která)\s/.test(t)) s+=15;
+  if(/(chápu|rozumím|to je fér|naprosto|dobře že|super že|díky že|oceňuji|perfektní|výborně|je vidět)/.test(t)) s+=14;
+  if(/(vteřin|minut|krátce|nezdržím|rychle|jen jedna věc)/.test(t)) s+=8;
+  (keys||[]).forEach(k=>{ if(t.includes(k)) s+=6; });
+  const first=t.trim().split(/\s+/).slice(0,7).join(' ');
+  if(/(akce|sleva|nabídk|zdarma|nejlevnější|ceník)/.test(first)) s-=12;
+  const n=tx.split(/\s+/).filter(Boolean).length;
+  if(n<5) s-=20; if(n>90) s-=8;
+  return Math.max(12,Math.min(95,Math.round(s)));
+}
+
+/* ================= CLAUDE API (s offline fallbackem) ================= */
+/* ===== EKONOMIKA MODELŮ =====
+   Produkční mapování AI volání na modely podle hodnoty a objemu:
+   - drill_eval → claude-haiku-4-5   (nejvyšší objem, krátká rubrika, latence < 1 s, ~80 % volání)
+   - customer   → claude-sonnet-4-6  (dialog s personou, konzistence, střední objem)
+   - deep_coach → claude-fable-5     (nízký objem, vysoká hodnota: týdenní diagnóza,
+                                      Training Studio generování, Team Coach doporučení)
+   V tomto demu běží všechna volání na Sonnet 4.6 (pravidlo prostředí artefaktů). */
+const MODEL_TIERS={drill_eval:'claude-sonnet-4-6',customer:'claude-sonnet-4-6',deep_coach:'claude-sonnet-4-6'};
+const PROD_MODEL_TIERS={drill_eval:'claude-haiku-4-5',customer:'claude-sonnet-4-6',deep_coach:'claude-fable-5'};
+async function askClaude(prompt,tier='customer'){
+  const res=await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({model:MODEL_TIERS[tier]||'claude-sonnet-4-6',max_tokens:1000,messages:[{role:'user',content:prompt}]})
+  });
+  if(!res.ok) throw new Error('api '+res.status);
+  const data=await res.json();
+  const text=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n');
+  return JSON.parse(text.replace(/```json|```/gi,'').trim());
+}
+
+/* ================= SCÉNÁŘOVÝ ENGINE (validováno expertním agentem) ================= */
+const UC=[
+ {id:'panelak',n:'Panelák s oznámením',d:'oznámení ve vchodě po dohodě se správcem'},
+ {id:'rd',n:'Rodinné domy — studený kontakt',d:'nová optika v ulici, žádné oznámení'},
+ {id:'novostavba',n:'Novostavba s přípojkou',d:'developer předpřipravil optickou zásuvku'},
+ {id:'navrat',n:'Návrat do vchodu',d:'kolega tu byl před měsícem (záznam v KPI)'},
+ {id:'tvup',n:'Doprodej TV / Magenta 1',d:'stávající zákazník internetu T-Mobile'},
+ {id:'senior',n:'Starší zástavba (ADSL)',d:'opatrná lokalita, dřív tu chodili falešní podomní'},
+];
+const P_BUILD={
+ panelak:['Panelák v Bolevci','Panelák na Lochotíně','Věžák na Borech','Panelák u Slovan'],
+ rd:['Řadovka na Valše','Rodinný dům v Radčicích','Dům se zahradou v Křimicích','Starší vilka na Roudné'],
+ novostavba:['Novostavba na Vinicích','Rezidence u parku','Nový bytový dům na Skvrňanech','Developerský projekt Unicity'],
+ navrat:['Panelák na Doubravce','Činžák v centru','Bytovka na Slovanech','Panelák u nádraží'],
+ tvup:['Bytovka na Košutce','Rodinný dům v Černicích','Panelák na Vinicích','Činžák na Roudné'],
+ senior:['Starší činžák na Petrohradě','Dům z 60. let na Doudlevcích','Cihlový dům u pivovaru','Zástavba na Slovanech'],
+};
+const P_TIME=['úterý 9:40','středa 11:15','čtvrtek 15:20','pátek 17:35','pondělí 18:50','sobota 10:30','neděle 15:00','středa 19:10'];
+const P_PERSONA=[
+ {n:'Martin (38)',e:'⏰',d:2,v:'Muž ~38, notebook pod paží, z bytu dětský křik.',h:'IT konzultant na home office, věcný, čas je pro něj vzácnější než peníze.'},
+ {n:'paní Vlasáková (67)',e:'👵',d:1,v:'Paní ~67, brýle na řetízku, za dveřmi štěká malý pes.',h:'Seniorka, vlídná, ale bojí se podvodníků. Nerozumí Mb/s — rozumí „vnučka na videu“.'},
+ {n:'Petr (29)',e:'🎮',d:3,v:'Muž ~29 v mikině, sluchátka na krku, za ním bliká router.',h:'Kompetitivní hráč, technicky zdatný, testuje kompetenci. Marketingové fráze ho odradí.'},
+ {n:'Jana (41)',e:'👨‍👩‍👧',d:2,v:'Žena ~41 v zástěře, z kuchyně syčí pánev, děti se hádají o tablet.',h:'Rozhoduje o rodinných výdajích, praktická. Slyší na úsporu a klid v domácnosti.'},
+ {n:'pan Krejčí (52)',e:'😤',d:4,v:'Muž ~52 — při pohledu na logo mu ztvrdne výraz.',h:'Bývalý zákazník T-Mobile se špatnou zkušeností s instalací. Uznání staré chyby bez výmluv je jediná cesta; obrana firmy = konec.'},
+ {n:'Ing. Havel (45)',e:'🖥️',d:3,v:'Upravený muž ~45, přes rameno vidíš home office se dvěma monitory.',h:'Technický expert, ptá se na parametry a chce přesná čísla. Neurčitost ho odrazuje.'},
+ {n:'paní Malá (34)',e:'🍼',d:2,v:'Žena ~34 s kojencem v náruči, mluví potichu.',h:'Maminka na rodičovské, unavená, nechce dlouhé řeči. Ocení stručnost a možnost domluvit se na jindy.'},
+ {n:'pan Beneš (58)',e:'😪',d:3,v:'Rozespalý muž ~58 v tílku, zjevně jsi ho vzbudil.',h:'Pracuje na noční směny. Podrážděnost není nezájem — jen špatné načasování. Klíč je rychlá omluva a nabídka termínu.'},
+ {n:'Lucka (24)',e:'🎓',d:2,v:'Slečna ~24, na zvonku jiné příjmení, nejistá.',h:'Studentka v nájmu — neví, co smí měnit. Uklidní ji, že instalaci lze řešit se souhlasem majitele.'},
+ {n:'pan Fiala (71)',e:'☕',d:1,v:'Usměvavý pán ~71, hned se dává do řeči o počasí.',h:'Povídavý důchodce, rád si popovídá — riziko není odmítnutí, ale ztráta směru rozhovoru.'},
+ {n:'paní Horká (49)',e:'🔒',d:3,v:'Žena ~49, dveře na řetízek, mluví skrz škvíru.',h:'Velmi nedůvěřivá k podomnímu prodeji. Bez průkazu a legitimity se rozhovor nekoná.'},
+ {n:'David (33)',e:'🤫',d:3,v:'Muž ~33, odpovídá jednoslovně, těžko čitelný.',h:'Mlčenlivý typ. Snese ticho — kdo ho nevydrží a mluví za něj, prohrává.'},
+];
+const P_OPEN={
+ neutral:['Dobrý den… co si přejete?','Ano? Prosím?','Dobrý den. Co potřebujete?','*pootevře dveře* No?'],
+ wary:['*na řetízek* Kdo je? Co chcete?','My nic nekupujeme.','*měří si tě* Vy jste od koho?'],
+ rushed:['Dobrý den — mám tak minutku. Co je?','*klíče v ruce* Zrovna odcházím. Co potřebujete?'],
+ annoyed:['*povzdech* Už zase někdo… Co si přejete?','Jestli něco prodáváte, tak rovnou říkám ne.'],
+ friendly:['Dobrý den! Copak potřebujete?','Zdravím — vy jste od té optiky, co je dole na nástěnce?'],
+ silent:['*otevře a mlčky se dívá*'],
+};
+const MOOD_D={neutral:0,friendly:-1,rushed:1,annoyed:1,wary:1,silent:1};
+const MOOD_VIS={neutral:'Výraz neutrální, vyčkává.',wary:'Dveře jen na škvíru, nedůvěřivý pohled.',rushed:'Je zjevně na odchodu.',annoyed:'Podrážděný výraz.',friendly:'Tváří se vstřícně.',silent:'Mlčí a čeká, kdo promluví první.'};
+const P_PAIN=[
+ {id:'vecer',h:'Skrytá bolest: večer se sdílená linka zpomalí, když je rodina online.',r:'No… večer to dost zlobí, když jsme online všichni.',l:'Páka: optika = vlastní kapacita, žádné večerní dělení.'},
+ {id:'upload',h:'Skrytá bolest: mrznou mu video-cally při práci z domova — problém je upload.',r:'Při hovorech z domova se mi seká obraz… prý upload, nebo co.',l:'Páka: symetrická FTTx 500/500.'},
+ {id:'dest',h:'Skrytá bolest: bezdrátové připojení padá při dešti a bouřkách.',r:'Když prší, tak to skoro nejde. To asi nevyřešíte, ne?',l:'Páka: optika + náhrada výpadku mobilními daty (Magenta 1).'},
+ {id:'cena',h:'Skrytá bolest: platí za internet + TV přes 1 100 Kč a přijde mu to moc.',r:'No, hlavně to stojí majlant, přes tisícovku měsíčně.',l:'Páka: Magenta 1 — jedna faktura, sleva až 25 %.'},
+ {id:'wifi',h:'Skrytá bolest: wifi nedosáhne do ložnice a na balkon, mrtvé zóny.',r:'V ložnici ta wifina skoro není… ale to je asi normální, ne?',l:'Páka: modem s Wi-Fi 6 + Wifi Manager zdarma.'},
+ {id:'tv',h:'Skrytá bolest: satelitní TV padá v dešti a nejde nahrávat dva pořady najednou.',r:'Televize přes satelit — když leje, kouká se na kostičky.',l:'Páka: Magenta TV Plus na jakémkoliv internetu, zpětné zhlédnutí.'},
+ {id:'zadna',h:'Žádná akutní bolest — je celkem spokojený, jen nikdy nesrovnával.',r:'Ale nám to celkem funguje, fakt.',l:'Páka: srovnání na magnetovém papíře + otázka na výhody za věrnost.'},
+ {id:'data',h:'Skrytá bolest: doma jede jen přes mobilní data a ke konci měsíce dochází.',r:'My tu máme jen data v telefonu… ke konci měsíce je to bída.',l:'Páka: pevná linka = neomezená domácí wifi.'},
+];
+const TVUP_PAINS=['cena','wifi','tv'];
+const P_PROV=['kabel od konkurence za 649 Kč','ADSL od konkurence za 499 Kč','lokální wifi síť za 450 Kč','optiku konkurence za 555 Kč','jen mobilní data v telefonu'];
+const P_DEC=[
+ {h:'Rozhoduje sám/sama.',w:'pozvání dovnitř k modelaci, nebo pevný termín (den + čas)'},
+ {h:'Rozhoduje společně s partnerem/partnerkou.',w:'termín, kdy budou doma oba'},
+ {h:'Bydlí v nájmu — změny musí posvětit majitel.',w:'souhlas + kontakt na majitele, nebo termín společné schůzky'},
+ {h:'Technické věci řeší dospělý syn, který tu nebydlí.',w:'kontakt na syna, nebo termín, kdy tu bude'},
+];
+function pick(a){return a[Math.floor(Math.random()*a.length)];}
+function genScenario(ucid){
+ const uc=UC.find(u=>u.id===ucid)||pick(UC);
+ const per=pick(P_PERSONA);
+ const moods=Object.keys(P_OPEN).filter(m=>m!=='friendly'||['panelak','novostavba','tvup'].includes(uc.id));
+ const mood=pick(moods);
+ const open=pick(P_OPEN[mood]);
+ const pain=uc.id==='tvup'?pick(P_PAIN.filter(p=>TVUP_PAINS.includes(p.id))):pick(P_PAIN);
+ const prov=uc.id==='tvup'?'pevný internet od T-Mobile (stávající zákazník)':pick(P_PROV);
+ const dec=pick(P_DEC);
+ const dif=Math.max(1,Math.min(4,per.d+(MOOD_D[mood]||0)));
+ const extra={navrat:' Před měsícem tu byl kolega — zákazník si to pamatuje a je citlivý na opakované návštěvy.',senior:' V lokalitě dřív chodili falešní podomní prodejci — bez průkazu a legitimity nikdo nemluví.',novostavba:' V bytě je předpřipravená optická zásuvka od developera — zákazník o ní často neví.'}[uc.id]||'';
+ return {ucid:uc.id,seg:uc.n,segd:uc.d,name:per.n,emoji:per.e,dif,mood,
+  vis:pick(P_BUILD[uc.id])+', '+pick(P_TIME)+'. '+per.v+' '+MOOD_VIS[mood],
+  hidden:per.h+' Má '+prov+'. '+pain.h+' '+dec.h+' '+pain.l+extra+' Na nátlak, ceník v úvodu a pomlouvání konkurence reaguje odmítnutím; skrytou bolest přizná až po dobré zjišťovací otázce, a i pak neochotně.',
+  open, win:dec.w, painReveal:pain.r};
+}
+const FAZE=['Kontakt','Zaujetí','Analýza','Hodnota','Krok'];
+
+/* ================= RP MODE SELECT ================= */
+S.ucSel='panelak';
+let VR_SCEN=null;
+function setUc(id){ S.ucSel=id; VR_SCEN=genScenario(id); render(true); }
+function newScenario(){ VR_SCEN=genScenario(S.ucSel); render(true); }
+function vRpSetup(){
+  if(!VR_SCEN||VR_SCEN.ucid!==S.ucSel) VR_SCEN=genScenario(S.ucSel);
+  const sup=speechSupported(); const c=VR_SCEN;
+  return `<div class="pad">
+    <button class="backbtn" onclick="go('learn')">‹ Zpět</button>
+    <span class="eyebrow">AI role-play · kompletní rozhovor</span>
+    <h1 class="h-lg" style="margin:8px 0 12px">Trénink u dveří</h1>
+    <div class="chiprow" style="margin-bottom:14px">
+      ${UC.map(u=>`<button class="chip ${S.ucSel===u.id?'mag':''}" style="cursor:pointer;border:none" onclick="setUc('${u.id}')">${u.n}</button>`).join('')}
+    </div>
+    <div class="card fade">
+      <div class="row between" style="margin-bottom:10px">
+        <div class="row" style="gap:10px">
+          <div class="avatar sm" style="background:linear-gradient(135deg,#3A3644,#221F2A)">${c.emoji}</div>
+          <div><div class="h-sm" style="font-size:13px">${c.name}</div><div class="tiny">${c.seg} · obtížnost ${c.dif}/4</div></div>
+        </div>
+        <button class="ttsbtn" onclick="newScenario()">🎲 nový scénář</button>
+      </div>
+      <span class="eyebrow mut">Co vidíš a slyšíš</span>
+      <p style="font-size:12.5px;line-height:1.55;margin:6px 0 12px;color:var(--muted)">${c.vis}</p>
+      <span class="eyebrow mut">Kontext akce</span>
+      <p style="font-size:12.5px;line-height:1.5;margin:6px 0 12px;color:var(--muted)">${c.segd}</p>
+      <span class="eyebrow mut">Tvoje výhra</span>
+      <p style="font-size:12.5px;line-height:1.5;margin-top:6px;color:var(--green)">✓ ${c.win}</p>
+      <div class="divider"></div>
+      <p class="tiny">Rozhovor začíná od nuly — otevřením dveří. Na zaujetí máš prvních 10 vteřin. Fáze: ${FAZE.join(' → ')}. Max 8 výměn.</p>
+    </div>
+    <div class="row" style="gap:8px;margin-bottom:12px">
+      <button class="ttsbtn ${S.trainerMode?'on':''}" style="flex:1" onclick="S.trainerMode=!S.trainerMode;render(true)">🧠 Režim trenéra: ${S.trainerMode?'ZAP — hodnotíš každou výměnu':'vyp'}</button>
+      <button class="ttsbtn ${S.examOn?'on':''}" style="flex:1" onclick="S.examOn=!S.examOn;if(S.examOn)while(VR_SCEN.dif<3)VR_SCEN=genScenario(S.ucSel);render(true)">🎖 Zkouška ${S.examPassed?'✓':(S.examStreak||0)+'/3'}</button>
+    </div>
+    <button class="btn fade d1" onclick="startVoiceRp()">🎤 Zahájit rozhovor</button>
+    ${S.hist.length?`<div class="card" style="margin-top:14px"><span class="eyebrow mut">Poslední tréninky</span>
+      ${S.hist.slice(0,4).map(h=>`<div class="row between" style="padding:8px 0;border-bottom:1px solid var(--line)">
+        <span class="tiny" style="flex:1">${new Date(h.ts).toLocaleDateString('cs-CZ')} · ${h.seg}${h.exam?' · 🎖':''}</span>
+        <span class="tiny" style="font-weight:700;color:${h.ok?'var(--green)':'var(--red)'}">fáze ${h.phase}/5 ${h.ok?'✓':'✗'}</span>
+      </div>`).join('')}</div>`:''}
+    <p class="tiny" style="text-align:center;margin-top:12px">Improvizuješ vlastními slovy — žádné výběry z možností. Mluvíš (nebo píšeš) jako doopravdy u dveří a AI zákazník reaguje na to, co řekneš.</p>
+    <p class="tiny" style="text-align:center;margin-top:8px">Scénářový engine: 100+ unikátních kombinací na každý use case, validováno expertním agentem.</p>
+    ${sup?'':'<p class="tiny" style="text-align:center;margin-top:8px">⚠ Tento prohlížeč neumí rozpoznávání řeči — půjde odpovídat i psaním.</p>'}
+  </div>`;
+}
+
+/* ================= HLASOVÝ ROLE-PLAY: KOMPLETNÍ, FÁZOVANÝ ================= */
+let VR=null;
+function startVoiceRp(){
+  if(S.examOn){ let g=VR_SCEN; let guard=0; while((!g||g.dif<3)&&guard++<50) g=genScenario(S.ucSel); VR_SCEN=g; }
+  const c=VR_SCEN||genScenario(S.ucSel);
+  VR={c,chat:[{r:'cust',t:c.open}],scores:[],mets:[],turn:0,phase:0,state:'idle',offline:false,ended:false,success:false,first:null,painShown:false,rt:null,ratedTurns:{},exam:S.examOn};
+  go('voicerp'); speak(c.open);
+}
+function vVoicerp(){
+  if(!VR) startVoiceRp();
+  const sup=speechSupported();
+  let log='';
+  VR.chat.forEach(m=>{
+    if(m.r==='cust') log+=`<div class="bubble cust">${m.t}</div>`;
+    else {
+      log+=`<div class="bubble me">${m.t}</div>`;
+      if(m.met) log+=`<div class="metline">${tempoLabel(m.met.wpm)}${m.met.fillers?' · '+m.met.fillers+'× výplňové slovo':''}</div>`;
+      if(m.note) log+=`<div class="coachnote">🧠 ${m.note}</div>`;
+    }
+  });
+  let controls='';
+  if(VR.ended){
+    controls=`<button class="btn" onclick="go('voicerpresult')">Zobrazit vyhodnocení</button>`;
+  } else if(VR.state==='think'){
+    controls=`<div class="michint" style="padding:16px 0"><span class="spin"></span> &nbsp;Zákazník reaguje…</div>`;
+  } else if(VR.state==='rec'){
+    controls=`<div class="livetx" id="vrLive">…poslouchám</div>
+      <div class="micwrap"><button class="micbtn rec" onclick="stopRec()">■</button>
+      <div class="michint">Mluv jako u dveří · klepni pro odeslání</div></div>`;
+  } else {
+    const useVoice=sup&&!S.forceText;
+    controls=`<div class="micwrap">
+      ${useVoice?`<button class="micbtn" onclick="vrRecord()">🎤</button><div class="michint">${VR.turn===0?'Prvních 10 vteřin — teď':'Klepni a odpověz nahlas'}</div>
+             <button class="ttsbtn" onclick="toggleText()">✍️ raději napíšu</button>`
+           :`<textarea class="fallback" id="vrText" placeholder="Napiš odpověď…"></textarea>
+             <button class="btn mini" onclick="vrSendText()">Odeslat</button>
+             ${sup?'<button class="ttsbtn" onclick="toggleText()">🎤 zpět na mluvení</button>':''}`}
+    </div>`;
+  }
+  let ratePanel='';
+  if(S.trainerMode && VR.turn>0 && !VR.ratedTurns[VR.turn] && !VR.ended){
+    if(!VR.rt) VR.rt={cust:null,coach:null,tags:[],txt:''};
+    const R=VR.rt;
+    const TAGS=['nerealistické','moc vstřícný','málo náročný','špatné skóre','pomohl prodejci'];
+    ratePanel=`<div class="ratebar">
+      <div class="row between" style="margin-bottom:8px"><span class="eyebrow" style="color:var(--amber)">Trenérské hodnocení výměny ${VR.turn}</span></div>
+      <div class="row" style="gap:8px;margin-bottom:8px">
+        <span class="tiny" style="width:74px">Zákazník:</span>
+        <button class="ratebtn ${R.cust==='up'?'up':''}" onclick="rtSet('cust','up')">👍</button>
+        <button class="ratebtn ${R.cust==='down'?'down':''}" onclick="rtSet('cust','down')">👎</button>
+        <span class="tiny" style="width:44px;text-align:right">Kouč:</span>
+        <button class="ratebtn ${R.coach==='up'?'up':''}" onclick="rtSet('coach','up')">👍</button>
+        <button class="ratebtn ${R.coach==='down'?'down':''}" onclick="rtSet('coach','down')">👎</button>
+      </div>
+      ${(R.cust==='down'||R.coach==='down')?`
+        <div class="chiprow" style="margin-bottom:8px">${TAGS.map(t=>`<button class="tagbtn ${R.tags.includes(t)?'on':''}" onclick="rtTag('${t}')">${t}</button>`).join('')}</div>
+        <textarea class="fallback" id="rtTxt" style="min-height:52px" placeholder="Jak by to mělo být správně? (reakce zákazníka / hodnocení kouče)">${R.txt}</textarea>`:''}
+      <div class="row" style="gap:8px;margin-top:8px">
+        <button class="btn mini" style="flex:1;background:var(--amber);color:#2a1c00" onclick="rtSave()">Uložit hodnocení</button>
+        <button class="btn ghost mini" onclick="rtGold()">⭐ Moje odpověď = vzor</button>
+        <button class="btn ghost mini" onclick="rtSkip()">Přeskočit</button>
+      </div>
+    </div>`;
+  }
+  return `<div class="pad" style="display:flex;flex-direction:column;min-height:100%">
+    <div class="row between" style="margin-bottom:12px">
+      <button class="backbtn" style="margin:0" onclick="const _t=S.trainerMode;S.trainerMode=false;VR=null;go(_t?'aitrain':'learn')">‹ Ukončit</button>
+      <button class="ttsbtn ${S.tts?'on':''}" onclick="toggleTts()">🔊 ${S.tts?'zap':'vyp'}</button>
+    </div>
+    <div class="row between" style="margin-bottom:8px">
+      <div class="row" style="gap:10px">
+        <div class="avatar sm" style="background:linear-gradient(135deg,#3A3644,#221F2A)">${VR.c.emoji}</div>
+        <div><div class="h-sm" style="font-size:12.5px">${VR.c.name}</div><div class="tiny">${VR.c.seg} · ${VR.offline?'offline':'AI'} · výměna ${Math.min(VR.turn+1,8)}/8 · 🎯 ${VR.c.win}</div></div>
+      </div>
+    </div>
+    <div class="phaserow">${FAZE.map((f,i)=>`<div class="phasedot ${VR.phase>i?'on':''}"><div class="pd"></div><div class="pl">${f}</div></div>`).join('')}</div>
+    ${log}
+    ${ratePanel}
+    <div style="margin-top:auto;padding-top:10px">${S.trainerMode&&ratePanel?'<p class="tiny" style="text-align:center;margin-bottom:8px">Nejdřív ohodnoť výměnu výše, pak pokračuj.</p>':''}${controls}</div>
+  </div>`;
+}
+function rtSet(k,v){ if(!VR.rt)VR.rt={cust:null,coach:null,tags:[],txt:''}; const el=$('rtTxt'); if(el)VR.rt.txt=el.value; VR.rt[k]=VR.rt[k]===v?null:v; render(true); }
+function rtTag(t){ const el=$('rtTxt'); if(el)VR.rt.txt=el.value; const i=VR.rt.tags.indexOf(t); if(i>=0)VR.rt.tags.splice(i,1); else VR.rt.tags.push(t); render(true); }
+function rtCtx(){
+  const c=VR.c;
+  const mes=VR.chat.filter(m=>m.r==='me'); const lastMe=mes[mes.length-1];
+  const custs=VR.chat.filter(m=>m.r==='cust');
+  return {ucid:c.ucid,persona:c.name,mood:c.mood,dif:c.dif,
+    custLine:(custs[custs.length-2]||custs[0]||{}).t||'',
+    aiCust:(custs[custs.length-1]||{}).t||'',
+    aiCoach:(lastMe&&lastMe.note)||'', meLine:(lastMe||{}).t||''};
+}
+function rtSave(){
+  const el=$('rtTxt'); if(el)VR.rt.txt=el.value;
+  const R=VR.rt, x=rtCtx(); let n=0;
+  if(R.cust){ fbAdd({kind:'cust',rating:R.cust,tags:R.tags,correction:R.cust==='down'?R.txt:'',ucid:x.ucid,persona:x.persona,mood:x.mood,dif:x.dif,custLine:x.custLine,aiLine:x.aiCust}); n++; }
+  if(R.coach){ fbAdd({kind:'coach',rating:R.coach,tags:R.tags,correction:R.coach==='down'?R.txt:'',ucid:x.ucid,persona:x.persona,mood:x.mood,dif:x.dif,custLine:x.meLine,aiLine:x.aiCoach}); n++; }
+  if(!n){ toast('Vyber aspoň 👍/👎'); return; }
+  VR.ratedTurns[VR.turn]=true; VR.rt=null;
+  toast('Uloženo — model se tím okamžitě řídí ✓'); render(true);
+}
+function rtGold(){
+  const x=rtCtx();
+  if(!x.meLine){ toast('Zatím žádná tvoje odpověď'); return; }
+  fbAdd({kind:'gold',text:x.meLine,custLine:x.custLine,ucid:x.ucid,persona:x.persona,mood:x.mood,dif:x.dif});
+  toast('⭐ Uloženo jako vzorová odpověď');
+}
+function rtSkip(){ VR.ratedTurns[VR.turn]=true; VR.rt=null; render(true); }
+function vrRecord(){
+  VR.state='rec'; render(true);
+  startRec('vrLive',(tx,dur)=>{
+    if(!tx){ VR.state='idle'; render(true); if(tx==='') toast('Nic jsem nezachytil — zkus to znovu'); return; }
+    vrProcess(tx,dur);
+  });
+}
+function vrSendText(){
+  const el=$('vrText'); const tx=(el&&el.value.trim())||'';
+  if(!tx){ toast('Napiš odpověď'); return; }
+  vrProcess(tx,0);
+}
+function firstTenCheck(tx){
+  const t=' '+tx.toLowerCase()+' ';
+  const ident=/(jmenuji se|mé jméno|jsem .{0,30}t.?mobile|t.?mobile osobně|průkaz)/.test(t);
+  const legit=/(oznámení|správc|vchod|ulic|dům|dohod|soused|nárok|výhod|zásuvk|develop|kolega)/.test(t);
+  const hook=/(jedna věc|vteřin|nezdržím|krátce|zaujm|netuší|zajímav)/.test(t);
+  const words=tx.split(/\s+/).filter(Boolean).length;
+  return {ident,legit,hook,words,pass:ident&&(legit||hook)&&words<=50};
+}
+function offlineStep(tx){
+  const c=VR.c, t=' '+tx.toLowerCase().replace(/[.,!?]/g,' ')+' ';
+  const has={
+    ident:/(jmenuji se|mé jméno|jsem [a-zžený ]{0,20}z |t.?mobile osobně|t.?mobile|průkaz|novák|zástupce)/.test(t),
+    legit:/(oznámení|správc|vchod|ulic| dům |domě|dohod|soused|nárok|výhod|zásuvk|develop|kolega|nástěnk|akci v tomto)/.test(t),
+    hook:/(jedna věc|vteřin|nezdržím|chvilku|krátce|zaujm|netuší|zajímav|efektivní)/.test(t),
+    q:/(jaké připojení|jaký internet|kolik zařízení|co vás|co doma|jak funguje|jak zvládá|vyhovuje vám|spokojen[íý] s|jak jste|kdo u vás|co používáte|k čemu.{0,15}využ|jaké máte zkušenost)/.test(t),
+    emp:/(chápu|rozumím|oceňuji|to je fér|omlouvám|mrzí|naprosto|perfektní|výborně)/.test(t),
+    value:/(optik|symetr|upload|výpad|zpětn|wifi manager|magenta|stabil|kapacit|faktu|sleva|neomezen|vlastní kapacit|rozdíl|řeší|vlákno|rychlej|spolehliv|nebude sekat|neseká|kvalit)/.test(t),
+    step:/(posadit|posaďme|posad|termín|zítra|schůzk|magnetov|srovnám|srovnat|ukážu|ukázat|zavolá|hodí|pojďme|pět minut|na papíře|stavím se|domluvíme|domluvit|kdy vám|kdy se|víkend)/.test(t),
+    pitch:/^ ?(akce|sleva|nabídk|máme akci|299|za polovinu|nejlevnější|berete|nezajímalo)/.test(t.trim())||/nezajímalo by vás/.test(t),
+  };
+  // kaskádový postup: v jedné replice může prodejce naplnit víc fází najednou
+  let p=VR.phase, adv=0;
+  const before=p;
+  if(p===0 && has.ident){ p=1; }
+  if(p===1 && (has.legit||has.hook||has.emp)){ p=2; }
+  if(p===2 && has.q){ p=3; }
+  if(p===3 && has.value){ p=4; }
+  if(p===4 && has.step){ p=5; }
+  adv=p-before;
+  const sc=adv>=2?2:(adv===1?1:0);
+  let reply,end=false,success=false;
+  if(VR.turn===1 && has.pitch && ['wary','annoyed','rushed','silent'].includes(c.mood)){
+    reply='Nemám zájem. *zavírá dveře*'; end=true;
+  } else if(VR.turn===1 && p===0){
+    reply=c.mood==='wary'?'*nedůvěřivě* A vy jste kdo? Odkud přesně?':'Počkejte — kdo vůbec jste?';
+  } else if(p>=5){
+    reply=(c.win.includes('termín')||c.win.includes('kontakt')||c.win.includes('souhlas'))?'*zaváhá* …Tak jo, domluvíme se. Ale ať to má hlavu a patu.':'*otevírá dveře* Tak pojďte dál. Ale rychle, ať to stihnu.';
+    end=true; success=true;
+  } else if(p===4){
+    reply='Hm… to zní zajímavě. A co s tím teda uděláme konkrétně?';
+  } else if(p===3 && !VR.painShown){
+    VR.painShown=true; reply=c.painReveal;
+  } else if(p===3){
+    reply='No dobře, ptáte se správně. Ale k čemu tím míříte?';
+  } else if(p===2){
+    reply='*pokrčí rameny* No… něco tu máme, funguje to nějak. Tak co potřebujete?';
+  } else if(p===1){
+    reply='Aha, T-Mobile. A proč chodíte zrovna sem? O co jde?';
+  } else {
+    reply='Aha. A co teda po mně chcete?';
+  }
+  if(!end && VR.turn>=8){ end=true; success=p>=5; if(!success) reply='Hele, už fakt musím. Nashle. *zavírá*'; }
+  VR._stall=(adv===0)?(VR._stall||0)+1:0; if(VR._stall>=2 && VR.turn>2 && c.dif>=3 && !end && p<4){ reply='*ztrácí trpělivost* Tohle nikam nevede. Nashle. *zavírá*'; end=true; }
+  const notes=['Chybí posun — zákazník pořád neví, kdo jsi, proč tu jsi, nebo co po něm chceš. Vrať se ke struktuře fází.','Dobrý posun o fázi. Drž linku: kontakt → zaujetí → analýza → hodnota → krok.','Výborně — posunul jsi rozhovor o dvě fáze najednou. Přesně tohle dělá špičkový obchodník.'];
+  return {reply,sc,phase:p,end,success,note:notes[sc]};
+}
+async function vrProcess(tx,dur){
+  const met=dur>0?speechMetrics(tx,dur):null;
+  VR.chat.push({r:'me',t:tx,met}); if(met) VR.mets.push(met);
+  VR.turn++;
+  if(VR.turn===1) VR.first=firstTenCheck(tx);
+  VR.state='think'; render(); $('screen').scrollTop=$('screen').scrollHeight;
+  let out;
+  try{
+    const c=VR.c;
+    const hist=VR.chat.map(m=>(m.r==='cust'?'ZÁKAZNÍK: ':'PRODEJCE: ')+m.t).join('\n');
+    out=await askClaude(
+`Jsi realistický simulátor zákazníka pro trénink podomního prodeje (D2D) T-Mobile CZ (Fiber, Magenta TV). Hraješ POUZE zákazníka. Rozhovor začíná úplně od nuly — právě jsi otevřel dveře cizímu člověku.
+
+USE CASE: ${c.seg} — ${c.segd}
+CO PRODEJCE VIDÍ: ${c.vis}
+SKRYTÝ KONTEXT (prodejce ho NEZNÁ, neprozrazuj ho sám od sebe): ${c.hidden}
+NÁLADA: ${c.mood}. OBTÍŽNOST: ${c.dif}/4.
+PODMÍNKA ÚSPĚCHU PRODEJCE: ${c.win}
+
+FÁZE ROZHOVORU (prodejce si každou musí ZASLOUŽIT, nic nepřeskakuj):
+1 Kontakt — představil se jménem a firmou (T-Mobile Osobně), ideálně průkaz
+2 Zaujetí — legitimita (proč tu je) nebo zvědavost; PRVNÍCH 10 VTEŘIN: pokud první replika je produktový pitch nebo cena, reaguj odmítavě, při náladě wary/annoyed/rushed rovnou zavři dveře
+3 Analýza — položil smysluplnou zjišťovací otázku (informativní/problémovou/na přání); teprve PO dobré otázce smíš po částech přiznat skrytou bolest
+4 Hodnota — propojil TVOJI konkrétní bolest s konkrétním řešením (ne obecné fráze)
+5 Krok — zajistil konkrétní další krok odpovídající podmínce úspěchu
+
+PRAVIDLA REALISMU:
+- Jsi skutečný člověk, ne cvičná figurína. Nepomáhej, nenaváděj, neprodávej za něj.
+- Bez fáze 1–2 se ptej, kdo vůbec je, nebo zavírej. Na monolog přes 2 věty reaguj netrpělivostí.
+- ETICKÝ KODEX = tvrdá pravidla: pomluva konkurence, „konkurence končí“, zavádějící informace, zamlčení konečné ceny/vrtání → skore 0 a odmítavá reakce.
+- Odpovídej 1–2 větami hovorovou češtinou, scénické poznámky v *hvězdičkách*.
+- Max 8 výměn. Buď náročný, ale férový — kdo pracuje správně, postupuje.
+
+${buildCalibration(c)}${buildMaterials()}
+Dosavadní rozhovor:
+${hist}
+
+Zároveň jako přísný trenér první ligy ohodnoť POSLEDNÍ repliku prodejce:
+- skore: 0 (chyba), 1 (průměr), 2 (výborná)
+- poznamka: JEDNA konkrétní věta česky
+- faze: nejvyšší fáze (0–5), kterou si prodejce dosud skutečně zasloužil
+Vrať POUZE validní JSON:
+{"zakaznik":"...","skore":0,"poznamka":"...","faze":0,"konec":"pokracuje|uspech|neuspech"}`,'customer');
+    if(typeof out.faze!=='number') out.faze=VR.phase;
+  }catch(e){
+    VR.offline=true;
+    const o=offlineStep(tx);
+    out={zakaznik:o.reply,skore:o.sc,poznamka:o.note,faze:o.phase,konec:o.end?(o.success?'uspech':'neuspech'):'pokracuje'};
+  }
+  VR.scores.push(out.skore);
+  VR.phase=Math.max(VR.phase,Math.min(5,out.faze|0));
+  const me=VR.chat[VR.chat.length-1]; me.note=out.poznamka;
+  VR.chat.push({r:'cust',t:out.zakaznik});
+  speak(out.zakaznik);
+  if(out.konec!=='pokracuje'||VR.turn>=8){ VR.ended=true; VR.success=out.konec==='uspech'&&VR.phase>=4; }
+  VR.state='idle'; render(); $('screen').scrollTop=$('screen').scrollHeight;
+}
+function sessStar(n){ VR.sessStars=n; render(true); }
+function sessSave(){
+  const el=$('sessTxt'); const note=(el&&el.value.trim())||'';
+  const c=VR.c;
+  fbAdd({kind:'session',rating:(VR.sessStars||0)>=4?'up':'down',stars:VR.sessStars||0,note,correction:note,ucid:c.ucid,persona:c.name,mood:c.mood,dif:c.dif,aiLine:'celá simulace: fáze '+VR.phase+'/5'});
+  toast('Hodnocení simulace uloženo ✓');
+}
+function vVoiceRpResult(){
+  const avg=VR.scores.length?VR.scores.reduce((a,b)=>a+b,0)/VR.scores.length:0;
+  const s=Math.round((VR.phase/5*60)+(avg/2*40));
+  const passed=VR.success;
+  const meW=VR.chat.filter(m=>m.r==='me').map(m=>m.t.split(/\s+/).length).reduce((a,b)=>a+b,0);
+  const cuW=VR.chat.filter(m=>m.r==='cust').map(m=>m.t.split(/\s+/).length).reduce((a,b)=>a+b,0);
+  const ratio=meW+cuW?Math.round(meW/(meW+cuW)*100):0;
+  if(!VR.logged){
+    VR.logged=true;
+    histAdd({seg:VR.c.seg,persona:VR.c.name,dif:VR.c.dif,phase:VR.phase,score:s,ok:passed,turns:VR.turn,ratio,exam:!!VR.exam});
+    const f0=VR.first||{};
+    skillsUpdate('Otvírák rozhovoru', f0.pass?85:35);
+    skillsUpdate('Vstup za dveře', passed?82:Math.min(70,VR.phase*15));
+    if(VR.phase>=3) skillsUpdate('Zjišťování potřeb',78);
+    skillsUpdate('Uzavírání', passed?82:45);
+    if(VR.exam){
+      if(passed){ S.examStreak=(S.examStreak||0)+1; if(S.examStreak>=3&&!S.examPassed){ S.examPassed=true; toast('🎖 CERTIFIKACE: Dveře 3/3 — splněno!'); } }
+      else S.examStreak=0;
+    }
+    stSave();
+  }
+  if(passed && RP_FROM_MISSION && !S.missionSteps[2]) S.missionSteps[2]=true;
+  const wpms=VR.mets.map(m=>m.wpm).filter(Boolean);
+  const avgWpm=wpms.length?Math.round(wpms.reduce((a,b)=>a+b,0)/wpms.length):0;
+  const fills=VR.mets.reduce((a,m)=>a+m.fillers,0);
+  let worst=null,minS=99; VR.chat.filter(m=>m.r==='me'&&m.note).forEach((m,i)=>{ const sc=(VR.scores[i]!==undefined)?VR.scores[i]:2; if(sc<minS){minS=sc;worst=m.note;} });
+  const f=VR.first||{};
+  return `<div class="pad">
+    <div style="text-align:center;margin:18px 0 16px">
+      ${ring(s,110,9,passed?'var(--green)':'var(--amber)','SKÓRE')}
+      <h1 class="h-md fade" style="margin-top:14px">${passed?'Dotáhl jsi to do konce! 🎉':'Rozhovor skončil ve fázi '+VR.phase+'/5'}</h1>
+      <p class="sub fade d1" style="margin-top:6px">${VR.c.name} · ${VR.c.seg} · obtížnost ${VR.c.dif}/4 ${VR.offline?'· offline režim':''}</p>
+    </div>
+    <div class="card fade">
+      <span class="eyebrow mut">Fázový průběh rozhovoru</span>
+      <div style="margin-top:12px">
+      ${FAZE.map((fz,i)=>`<div class="row" style="gap:10px;margin-bottom:8px">
+        <div style="width:22px;height:22px;border-radius:50%;background:${VR.phase>i?'var(--green-dim)':'var(--card2)'};display:flex;align-items:center;justify-content:center;font-size:11px;color:${VR.phase>i?'var(--green)':'var(--faint)'}">${VR.phase>i?'✓':i+1}</div>
+        <div style="font-size:12.5px;font-weight:600;color:${VR.phase>i?'var(--text)':'var(--faint)'}">${fz}${VR.phase===i?' ← tady se to zlomilo':''}</div>
+      </div>`).join('')}
+      </div>
+    </div>
+    <div class="card fade d1">
+      <span class="eyebrow mut">Prvních 10 vteřin</span>
+      <div class="chiprow" style="margin-top:10px">
+        <span class="chip ${f.ident?'grn':'red'}">${f.ident?'✓':'✗'} představení</span>
+        <span class="chip ${(f.legit||f.hook)?'grn':'red'}">${(f.legit||f.hook)?'✓':'✗'} legitimita / zaujetí</span>
+        <span class="chip ${f.words<=50?'grn':'amb'}">${f.words||0} slov</span>
+      </div>
+      ${!f.pass?'<p class="tiny" style="margin-top:10px">První replika rozhoduje, jestli vůbec dostaneš šanci. Vzorec: jméno + T-Mobile Osobně + proč tu jsem, do ~10 vteřin.</p>':''}
+    </div>
+    <div class="card fade d1">
+      <span class="eyebrow mut">Řečové metriky</span>
+      <div class="grid3" style="margin-top:10px">
+        <div class="stat"><div class="sv">${avgWpm||'—'}</div><div class="sl">slov / min</div></div>
+        <div class="stat"><div class="sv" style="color:${fills>2?'var(--amber)':'var(--green)'}">${fills}</div><div class="sl">výplňová slova</div></div>
+        <div class="stat"><div class="sv" style="color:${ratio>=40&&ratio<=65?'var(--green)':'var(--amber)'}">${ratio} %</div><div class="sl">poměr mluvení</div></div>
+      </div>
+      <p class="tiny" style="margin-top:10px">${ratio>65?'⚠ Mluvíš přes 65 % rozhovoru — u dveří vyhrává ten, kdo se ptá a poslouchá.':ratio<40?'Mluvíš málo — přidej vedení rozhovoru, jinak ho převezme zákazník.':'✓ Zdravý poměr mluvení (40–65 %) — vedeš rozhovor a necháváš zákazníka mluvit.'}</p>
+    </div>
+    ${worst?`<div class="card hot fade d2"><span class="eyebrow">Jedna věta na zítra</span><p style="font-size:14px;font-weight:600;line-height:1.55;margin-top:8px">${worst}</p></div>`:''}
+    <div class="card fade d2">
+      <span class="eyebrow mut">Poznámky kouče z rozhovoru</span>
+      <div style="margin-top:8px;font-size:12.5px;line-height:1.7;color:var(--muted)">
+        ${VR.chat.filter(m=>m.r==='me'&&m.note).map((m,i)=>`<b style="color:var(--text)">${i+1}.</b> ${m.note}`).join('<br>')}
+      </div>
+    </div>
+    ${S.trainerMode?`<div class="ratebar">
+      <span class="eyebrow" style="color:var(--amber)">Hodnocení celé simulace (trenér)</span>
+      <div class="row" style="gap:6px;margin:10px 0">${[1,2,3,4,5].map(n=>`<span class="star ${(VR.sessStars||0)>=n?'on':''}" onclick="sessStar(${n})">⭐</span>`).join('')}</div>
+      <textarea class="fallback" id="sessTxt" style="min-height:52px" placeholder="Poznámka: co má model dělat jinak? (volitelné)"></textarea>
+      <button class="btn mini" style="margin-top:8px;background:var(--amber);color:#2a1c00" onclick="sessSave()">Uložit hodnocení simulace</button>
+    </div>`:''}
+    <div class="row" style="gap:10px;margin-bottom:10px">
+      <button class="btn ghost" onclick="newScenario();startVoiceRp()">🎲 Nový zákazník</button>
+      <button class="btn ghost" onclick="startVoiceRp()">↻ Stejný znovu</button>
+    </div>
+    <button class="btn" onclick="${passed?'addXP(40);':''}VR=null;const _t=S.trainerMode;S.trainerMode=false;go(_t?'aitrain':'${RP_FROM_MISSION?'mission':'learn'}')">${passed?'Pokračovat · +40 XP':(S.trainerMode?'Zpět na AI Trénink':'Zpět na učení')}</button>
+  </div>`;
+}
+/* ================= KNIHOVNA NÁMITEK ================= */
+const OBJ_LIB=[
+ {o:'Jsem spokojený se svým poskytovatelem.',ctx:'Cihlový dům, sobota 10:30. Muž ~50 v zahradním oblečení, klidný, nikam nespěchá.',c:'Loajalita',a:'Věrný zákazník',keys:['oceňuji','věrnost','výhody','jaké'],tip:'„Skvělé, věrnost oceňuji. Jaké speciální výhody vám za ni váš poskytovatel dal? U nás na věrnost slyšíme…“'},
+ {o:'Nemám čas, spěchám.',ctx:'Novostavba, všední den 17:50. Žena ~35 v kostýmku, klíče od auta v ruce, už je na odchodu.',c:'Čas',a:'Zaneprázdněný profesionál',keys:['vteřin','20','krátce','jedna věc'],tip:'„Chápu, zdržím vás maximálně 20 vteřin. Jen jedna věc o připojení v téhle ulici, kterou většina sousedů netuší.“'},
+ {o:'Pošlete mi to e-mailem.',ctx:'Kancelářský typ ~40, dveře otevírá jen napůl, zdvořilý úsměv — klasické slušné ukončení.',c:'Únik',a:'„Pošlete e-mail“',keys:['rychlost','televiz','čtvrtek','pátek','ozvu'],tip:'„Rád pošlu. Ať tam nemáte balast — jde vám spíš o rychlost, nebo o televizi? A můžu se ve čtvrtek ozvat, jestli to dávalo smysl?“'},
+ {o:'Kolik to stojí? … To je moc drahé.',ctx:'Panelák, muž ~45. Na cenu se zeptal dřív, než jsi dořekl pozdrav.',c:'Cena',a:'Lovec cen',keys:['oceňuji','rozpočt','srovn','kolik platíte'],tip:'„Oceňuji, že to hlídáte z pohledu rozpočtu. Tady jde ale o jinou síť s jinou kvalitou — pojďme nejdřív srovnat, co za své peníze reálně dostáváte teď.“'},
+ {o:'Musím se poradit s manželkou.',ctx:'Rodinný dům, večer. Muž ~55, váhavý, během řeči se ohlíží do domu.',c:'Rozhodování',a:'Decision influencer',keys:['oceňuji','doma','zavolat','kdy'],tip:'„Výborně, oceňuji, že se nerozhodujete sám. Je partnerka teď doma? Můžeme jí zavolat? Pokud ne, kdy to spolu proberete?“'},
+ {o:'Už jste tu byli minulý měsíc.',ctx:'Panelák, na dveřích cedulka „Nevhazovat letáky“. Podrážděný tón od první vteřiny.',c:'Nedůvěra',a:'Skeptik',keys:['omlouvám','nová','změnil','od té doby'],tip:'„Máte pravdu a omlouvám se. Jdu ale s jednou konkrétní novinkou, která od té doby platí pro váš dům — 30 vteřin?“'},
+ {o:'Internet skoro nepoužívám.',ctx:'Starší dům, paní ~70, brýle na řetízku, přívětivá, ale opatrná.',c:'Potřeba',a:'Senior',keys:['telefon','vnouča','video','kdo k vám'],tip:'„A když k vám přijedou děti nebo vnoučata — funguje jim tu všechno? Často to řešíme právě kvůli návštěvám.“'},
+ {o:'Mám smlouvu a pokutu za odchod.',ctx:'Bytovka, muž ~35, věcný, mluví rychle — tohle už evidentně řešil.',c:'Závazek',a:'Věrný zákazník',keys:['rodné číslo','ičo','modem','odpustíme','kdy končí'],tip:'„Rozumím. Máte smlouvu na rodné číslo, nebo na IČO? Jestli jde o modem — můžete ho v klidu dosplácet a my vám u nás pronájem odpustíme.“'},
+ {o:'S vámi jsem měl špatnou zkušenost.',ctx:'Muž ~50. Jakmile uviděl logo na vestě, ztvrdl mu výraz a založil ruce.',c:'Zkušenost',a:'Špatná zkušenost',keys:['mrzí','co konkrétně','stalo','písemně'],tip:'„To mě velmi mrzí — můžu se zeptat, co konkrétně se stalo? … Rozumím. Neslibuji zázraky, ale ukážu vám písemně, co se od té doby změnilo.“'},
+ {o:'Optiku nepotřebuju, stačí mi, co mám.',ctx:'Muž ~60, mávne rukou, ale dveře nechává pootevřené — není to tvrdé ne.',c:'Potřeba',a:'Skeptik',keys:['rozumím','bez rizika','vyzkoušet','vrátit'],tip:'„Naprosto rozumím — kdyby vám to nestačilo, už byste řešil lepší. Vyzkoušet to ale můžete bez rizika: když nebudete spokojený, vrátíte se k tomu, co máte.“'},
+ {o:'Nevěřím podomním prodejcům.',ctx:'Žena ~45, dveře na řetízek, mluví skrz škvíru. V domě nedávno „chodili falešní energetici“.',c:'Nedůvěra',a:'Skeptik',keys:['fér','průkaz','ověřit','nemusíte'],tip:'„To je fér přístup. Tady je můj průkaz a vše si můžete ověřit na lince T-Mobile. Nemusíte věřit mně — jen mi dejte 30 vteřin na jeden fakt o vašem domě.“'},
+ {o:'Teď se to nehodí, mám návštěvu.',ctx:'Z bytu je slyšet hovor a cinkání nádobí. Paní ~40, přátelská, ale ve spěchu.',c:'Čas',a:'Zaneprázdněný profesionál',keys:['kdy','večer','zítra','hodí'],tip:'„Jasně, nebudu rušit. Hodí se spíš zítra kolem šesté, nebo o víkendu dopoledne? Zaberu pět minut.“'},
+ {o:'Stejně to pak zdražíte.',ctx:'Muž ~40, ironický úsměv, ruce založené. Čeká, jak se z toho vykroutíš.',c:'Nedůvěra',a:'Skeptik',keys:['smlouv','garant','písemně','po akci'],tip:'„Rozumím té obavě. Proto vám ukážu přímo ve smlouvě cenu po skončení akce — černé na bílém, žádné hvězdičky.“'},
+ {o:'Televizi neřeším, máme Netflix.',ctx:'Mladý pár ~30, v pozadí velká TV s pauznutým seriálem.',c:'TV',a:'TV nadšenec',keys:['balíč','zpětné','sport','nenahrazuje'],tip:'„Super volba. Magenta TV Plus Netflix nenahrazuje — máte balíčky přímo s Netflixem, HBO Max nebo Disney+, k tomu zpětné zhlédnutí. Co vám dnes chybí — sport, zprávy naživo?“'},
+ {o:'Bydlím v nájmu, nemůžu nic měnit.',ctx:'Studentka ~25, na zvonku jiné příjmení, nejistá, jestli vůbec může rozhodovat.',c:'Praktická',a:'Manažer domácnosti',keys:['bez zásahu','zásuvk','majitel','souhlas'],tip:'„Dobrá zpráva — u zavedené optiky se většinou nic nevrtá, jen se aktivuje zásuvka. A souhlas majitele umíme vyřešit za vás.“'},
+ {o:'Konkurence mi nabídla levnější tarif.',ctx:'Muž ~35, v ruce drží leták konkurence a poklepává na cenu.',c:'Konkurence',a:'Lovec cen',keys:['co obsahuje','rychlost','záruk','srovnat'],tip:'„Může být výhodná. Co přesně obsahuje — rychlost, záruky, cenu po akci? Pojďme to srovnat vedle sebe, ať rozhodujete s čísly.“'},
+ {o:'Nechci žádné vrtání a dráty.',ctx:'Čerstvě zrekonstruovaný byt, paní ~50 se ohlíží na nově vymalovanou chodbu.',c:'Instalace',a:'Manažer domácnosti',keys:['tuha','propisky','uklidí','technici','rozumím'],tip:'„Rozumím — je vidět, že si v bytě udržujete pořádek. Optické vlákno je tenké jako tuha z propisky, průvrt je malinký a technici po instalaci vždy vše uklidí.“'},
+ {o:'Wi-Fi mi doma stejně nefunguje, to nevyřešíte.',ctx:'Muž ~30 v mikině, za ním na botníku bliká router zapadaný botami.',c:'Technika',a:'Technický expert',keys:['router','wi-fi','pokrytí','rozdíl'],tip:'„Právě že řešíme obojí — přívod i domácí Wi-Fi. Kde máte router teď? Často je problém v pokrytí, ne v lince.“'},
+ {o:'Jsem starší, tolik toho nepotřebuju.',ctx:'Pán ~75 s naslouchátkem, mluví pomalu, přívětivý — ale rozhovor rád ukončí.',c:'Potřeba',a:'Senior',keys:['jednoduch','pomůže','rodina','volání'],tip:'„Rozumím — a přesně proto se ptám: co používáte nejčastěji? Často stačí jednodušší a levnější řešení, než jaké máte teď.“'},
+ {o:'Musím si to rozmyslet.',ctx:'Muž ~45, celou dobu přikyvoval, u podpisu couvá. Není proti — jen se bojí rozhodnout.',c:'Rozhodování',a:'Nerozhodný',keys:['perfektní','oceňuji','co konkrétně','promyslet'],tip:'„Perfektní, oceňuji, že neděláte unáhlená rozhodnutí. Co konkrétně si potřebujete promyslet — cenu, instalaci, nebo něco jiného?“'},
+ {o:'Nemám rád změny.',ctx:'Pán ~65, pohodlný, u jednoho operátora celý život. Změna = riziko.',c:'Loajalita',a:'Věrný zákazník',keys:['chápu','dávno','na druhou stranu','nic neměníte'],tip:'„To naprosto chápu — kdybyste změnu chtěl, dávno byste ji udělal. Na druhou stranu: vaše zvyky se nemění, jen linka pod nimi bude spolehlivější.“'},
+ {o:'Raději to podepíšu na prodejně.',ctx:'Žena ~55, opatrná na podpisy doma u dveří. Zájem má, důvěru ne.',c:'Důvěra',a:'Skeptik',keys:['rozumím','prodejn','připravím','doklad','zavolat'],tip:'„Rozumím, na prodejně je příjemné prostředí. Připravím vám to tam — jen ověřím: jste starší 18 let a máte platný doklad? A kdy vám zítra můžeme zavolat pro potvrzení?“'},
+ {o:'Poradím se s kamarádem, on tomu rozumí.',ctx:'Muž ~40, nejistý v technice, deleguje rozhodnutí na známého „ajťáka“.',c:'Rozhodování',a:'Nerozhodný',keys:['rozumím','dovysvětlit','jednoduše','co konkrétně'],tip:'„Rozumím. Co z toho vám můžu dovysvětlit hned teď — klidně jednoduše, jako bych to vysvětloval svému kamarádovi? Co konkrétně by kamaráda zajímalo?“'},
+ {o:'Nechte mi leták, já se ozvu.',ctx:'Muž ~45, dveře už přivírá, nataženou rukou si říká o leták.',c:'Únik',a:'„Pošlete e-mail“',keys:['zakroužku','konkrétní','ozvu se já','termín'],tip:'„Nechám — a zakroužkuji vám jedinou věc, která se týká vašeho domu. A ozvu se radši já: hodí se úterý, nebo čtvrtek?“'},
+];
+
+/* ================= DRIL FRÁZÍ ================= */
+let D=null;
+function startDrill(){
+  const idx=[...OBJ_LIB.keys()].sort(()=>Math.random()-.5).slice(0,5);
+  D={queue:idx,i:0,scores:[],state:'ask',last:null,offline:false,hint:false,retryMode:false,prev:null};
+  go('drill');
+}
+function vDrill(){
+  if(!D) startDrill();
+  if(D.i>=D.queue.length) return vDrillSummary();
+  const item=OBJ_LIB[D.queue[D.i]];
+  const sup=speechSupported();
+  let body='';
+  if(D.state==='ask'){
+    const useVoice=sup&&!S.forceText;
+    body=`<div class="micwrap" style="margin-top:6px">
+      ${useVoice?`<button class="micbtn" onclick="drillRecord()">🎤</button><div class="michint">Klepni a odpověz nahlas — jako u dveří</div>
+             <button class="ttsbtn" onclick="toggleText()">✍️ raději napíšu</button>`
+           :`<textarea class="fallback" id="drillText" placeholder="Napiš odpověď…"></textarea><button class="btn mini" onclick="drillSendText()">Odeslat</button>
+             ${sup?'<button class="ttsbtn" onclick="toggleText()">🎤 zpět na mluvení</button>':''}`}
+    </div>
+    <div style="text-align:center"><button class="ttsbtn" onclick="toggleHint()">💡 struktura odpovědi</button></div>
+    ${D.hint?'<div class="card flat" style="margin-top:10px"><p style="font-size:12.5px;line-height:1.6"><b>1.</b> Potvrď, co zákazník řekl (žádné „ale“)&nbsp;· <b>2.</b> zvědavost nebo jedna zjišťovací otázka&nbsp;· <b>3.</b> konkrétní další krok.<br><span class="tiny">Žádná cena ani akce v první větě. Přizpůsob tón situaci výše.</span></p></div>':''}`;
+  } else if(D.state==='rec'){
+    body=`<div class="livetx" id="drillLive">…poslouchám</div>
+      <div class="micwrap"><button class="micbtn rec" onclick="stopRec()">■</button><div class="michint">Klepni pro odeslání</div></div>`;
+  } else if(D.state==='eval'){
+    body=`<div class="michint" style="padding:26px 0"><span class="spin"></span> &nbsp;Kouč hodnotí tvou odpověď…</div>`;
+  } else if(D.state==='fb'){
+    const L=D.last;
+    body=`
+      <div class="bubble me" style="max-width:100%;margin-top:6px">${L.tx}</div>
+      ${L.m&&L.m.wpm?`<div class="metline">${tempoLabel(L.m.wpm)}${L.m.fillers?' · '+L.m.fillers+'× výplňové slovo':''}</div>`:''}
+      <div class="card" style="margin-top:4px">
+        <div class="row" style="gap:14px">
+          ${ring(L.skore,64,6,L.skore>=70?'var(--green)':L.skore>=50?'var(--amber)':'var(--red)')}
+          <p style="flex:1;font-size:12.5px;line-height:1.55">${L.zpetna_vazba}</p>
+        </div>
+      </div>
+      <div class="card flat">
+        <span class="eyebrow mut">Vzorová odpověď</span>
+        <p style="font-size:13px;line-height:1.6;margin-top:8px;color:var(--muted)">${L.lepsi_verze}</p>
+        <button class="btn ghost mini" style="margin-top:10px" onclick="drillRepeat()">🔁 Zopakovat nahlas vzor</button>
+      </div>
+      ${(L.skore<70&&!L.retry)?`<button class="btn ghost" style="margin-bottom:10px" onclick="drillRetry()">🔁 Říct to znovu lépe</button>`:''}
+      <button class="btn" onclick="drillNext()">${D.i<D.queue.length-1?'Další námitka ›':'Vyhodnotit dril'}</button>`;
+  }
+  return `<div class="pad">
+    <div class="row between" style="margin-bottom:14px">
+      <button class="backbtn" style="margin:0" onclick="D=null;go('learn')">‹ Ukončit</button>
+      <span class="chip mag">${D.i+1} / ${D.queue.length}</span>
+    </div>
+    <div class="bar" style="margin-bottom:20px"><i style="width:${D.i/D.queue.length*100}%"></i></div>
+    <span class="eyebrow">⚡ Dril frází</span>
+    <div class="chiprow" style="margin:12px 0 4px"><span class="chip">${item.c}</span><span class="chip">${item.a}</span></div>
+    <div class="card hot" style="margin-top:10px">
+      <span class="eyebrow mut">📍 Situace</span>
+      <p style="font-size:12.5px;line-height:1.5;margin:6px 0 0;color:var(--muted)">${item.ctx}</p>
+      <div class="divider"></div>
+      <span class="eyebrow mut">Zákazník říká:</span>
+      <div class="drillobj">„${item.o}“</div>
+    </div>
+    ${body}
+  </div>`;
+}
+function drillRecord(){
+  D.state='rec'; render(true);
+  startRec('drillLive',(tx,dur)=>{
+    if(!tx){ D.state='ask'; render(true); return; }
+    drillEval(tx,dur);
+  });
+}
+function drillSendText(){
+  const el=$('drillText'); const tx=(el&&el.value.trim())||'';
+  if(!tx){ toast('Napiš odpověď'); return; }
+  drillEval(tx,0);
+}
+async function drillEval(tx,dur){
+  const item=OBJ_LIB[D.queue[D.i]];
+  const m=dur>0?speechMetrics(tx,dur):null;
+  D.state='eval'; render();
+  let out;
+  try{
+    out=await askClaude(
+`Jsi zkušený trenér podomního prodeje T-Mobile (Fiber internet, Magenta TV). Hodnotíš MLUVENOU odpověď prodejce na námitku zákazníka u dveří. Hodnoť: empatii/potvrzení, zvědavost či zjišťovací otázku, respekt k času, zajištění dalšího kroku; penalizuj okamžitý ceník, tlak a útok na dosavadní volbu zákazníka.
+Situace u dveří: ${item.ctx}
+Námitka zákazníka: „${item.o}“
+Odpověď prodejce (přepis řeči): „${tx}“
+Hodnoť i to, zda odpověď sedí k situaci (typ zákazníka, spěch, nálada) — univerzální fráze bez adaptace na situaci stáhni o body.
+Metodický vzorec TOS: ocenění/potvrzení → přerámování → otázka nebo konkrétní další krok.
+Etický kodex (tvrdá pravidla, při porušení skore max 20): žádné pomlouvání konkurence, žádné zavádějící informace, žádné zamlčení konečné ceny či vrtání.
+${buildCalibration({})}${buildMaterials()}
+Vrať POUZE validní JSON:
+{"skore":0,"zpetna_vazba":"1–2 věty česky, konkrétně co zlepšit nebo co bylo dobře","lepsi_verze":"vzorová odpověď 1–2 věty v přirozené mluvené češtině"}`,'drill_eval');
+    if(typeof out.skore!=='number') throw new Error('bad json');
+  }catch(e){
+    D.offline=true;
+    const s=heurScore(tx,item.keys);
+    out={skore:s,
+      zpetna_vazba:s>=70?'Silná odpověď — je tam potvrzení i otázka. Tohle si zapamatuj a používej.':(s>=50?'Dobrý základ. Přidej zjišťovací otázku nebo konkrétní další krok, ať rozhovor pokračuje.':'Odpověď sklouzla k produktu nebo byla moc krátká. Vzorec: potvrď → zvědavost/otázka → další krok.'),
+      lepsi_verze:item.tip};
+  }
+  out.skore=Math.max(0,Math.min(100,Math.round(out.skore)));
+  if(D.retryMode){
+    const delta=out.skore-D.prev.skore;
+    out.zpetna_vazba=(delta>0?`📈 Zlepšení o ${delta} bodů! `:(delta<0?'Tentokrát slabší — vrať se ke struktuře. ':''))+out.zpetna_vazba;
+    out.retry=true;
+    D.scores[D.scores.length-1]=Math.max(D.prev.skore,out.skore);
+    D.retryMode=false;
+  } else { D.scores.push(out.skore); }
+  D.last={tx,m,...out};
+  D.state='fb'; render();
+}
+function drillRepeat(){
+  const L=D.last; if(!L) return;
+  if(window.speechSynthesis){ const t=S.tts; S.tts=true; speak(L.lepsi_verze); S.tts=t; }
+  toast('Řekni vzor nahlas 2× — tak vzniká automatismus 💪');
+}
+function drillNext(){ D.i++; D.state='ask'; D.last=null; D.hint=false; D.retryMode=false; render(); }
+function drillRetry(){ D.prev=D.last; D.retryMode=true; D.state='ask'; render(); toast('Stejná situace — teď líp 💪'); }
+function toggleHint(){ D.hint=!D.hint; render(true); }
+function vDrillSummary(){
+  const avg=Math.round(D.scores.reduce((a,b)=>a+b,0)/D.scores.length);
+  if(!D.logged){ D.logged=true; skillsUpdate('Práce s námitkami',avg); stSaveSoon(); }
+  const xp=20+Math.round(avg/10)*2;
+  return `<div class="pad">
+    <div style="text-align:center;margin:26px 0 20px">
+      ${ring(avg,110,9,avg>=70?'var(--green)':'var(--amber)','PRŮMĚR')}
+      <h1 class="h-md fade" style="margin-top:14px">${avg>=70?'Skvělý dril! 🔥':'Dril dokončen 💪'}</h1>
+      <p class="sub fade d1" style="margin-top:6px">${D.queue.length} námitek · ${D.offline?'offline hodnocení':'hodnoceno AI koučem'} · nejslabší odpovědi se vrátí v opakování</p>
+    </div>
+    <div class="card fade d1">
+      <span class="eyebrow mut">Skóre po námitkách</span>
+      <div style="margin-top:12px">
+        ${D.queue.map((qi,k)=>skillBar(OBJ_LIB[qi].c+' · '+OBJ_LIB[qi].o.slice(0,22)+'…',D.scores[k])).join('')}
+      </div>
+    </div>
+    <div class="card hot fade d2">
+      <span class="eyebrow">Spaced repetition</span>
+      <p style="font-size:13px;line-height:1.55;margin-top:8px">Námitky se skóre pod 60 se ti automaticky vrátí <b>zítra</b> a pak za 3 dny. Fráze se memorují opakováním nahlas, ne čtením.</p>
+    </div>
+    <div class="row" style="gap:10px">
+      <button class="btn ghost" onclick="startDrill()">↻ Dalších 5</button>
+      <button class="btn" onclick="addXP(${xp});D=null;go('learn')">Hotovo · +${xp} XP</button>
+    </div>
+  </div>`;
+}
+
+/* ================= PERSISTENCE PROFILU (aplikace se nespouští od začátku) ================= */
+const SAVE_KEYS=['onboarded','name','level','levelName','xp','xpNext','streak','skills','funnel','products','missionSteps','readyDone','tipTried','ucSel','hist','examStreak','examPassed'];
+let ST_PERSIST=false, _stT=null;
+S.hist=[]; S.examStreak=0; S.examPassed=false; S.examOn=false;
+async function stLoad(){
+  try{
+    const r=await window.storage.get('fh_state');
+    if(r&&r.value){ const d=JSON.parse(r.value); SAVE_KEYS.forEach(k=>{ if(d[k]!==undefined) S[k]=d[k]; }); }
+    ST_PERSIST=true;
+  }catch(e){
+    try{ await window.storage.set('fh_state','{}'); ST_PERSIST=true; }catch(e2){ ST_PERSIST=false; }
+  }
+  if(S.onboarded && (S.screen==='welcome'||S.screen==='assess')) S.screen='today';
+  render(true);
+}
+function stSave(){ const d={}; SAVE_KEYS.forEach(k=>d[k]=S[k]); try{ window.storage.set('fh_state',JSON.stringify(d)); }catch(e){} }
+function stSaveSoon(){ clearTimeout(_stT); _stT=setTimeout(stSave,1200); }
+async function stReset(){
+  if(!confirm('Opravdu smazat celý profil (XP, historii, dovednosti) a začít znovu?')) return;
+  try{ await window.storage.delete('fh_state'); }catch(e){}
+  location.reload?location.reload():0;
+}
+function skillsUpdate(name,target){
+  const k=S.skills.find(x=>x[0]===name);
+  if(k) k[1]=Math.max(5,Math.min(98,Math.round(k[1]*0.8+target*0.2)));
+}
+function histAdd(h){ h.ts=Date.now(); S.hist.unshift(h); if(S.hist.length>15) S.hist.length=15; stSaveSoon(); }
+
+/* ================= AI TRÉNINK — datová vrstva a učení modelu =================
+   Zpětná vazba trenérů a školicí podklady se ukládají (window.storage v artefaktu,
+   jinak jen v paměti + export). Učení modelu v demu = kalibrační kontext s nejvyšší
+   prioritou vkládaný do všech AI promptů (RAG). Export JSONL = dataset připravený
+   pro produkční fine-tuning / RLHF pipeline. */
+let FB={items:[],mats:[]};
+let FB_PERSIST=false;
+async function fbLoad(){
+  try{ const r=await window.storage.get('fh_fb'); if(r&&r.value){ FB=JSON.parse(r.value); } FB_PERSIST=true; }
+  catch(e){ try{ await window.storage.set('fh_fb', JSON.stringify(FB)); FB_PERSIST=true; }catch(e2){ FB_PERSIST=false; } }
+}
+async function fbSave(){ try{ await window.storage.set('fh_fb', JSON.stringify(FB)); FB_PERSIST=true; }catch(e){} }
+function fbAdd(entry){
+  entry.ts=Date.now(); entry.author='trenér'; entry.priority='high';
+  FB.items.unshift(entry); if(FB.items.length>400) FB.items.length=400;
+  fbSave();
+}
+function matAdd(title,text){ FB.mats.unshift({id:Date.now(),title:title.slice(0,80),text:text.slice(0,6000),active:true}); fbSave(); }
+
+function buildCalibration(ctx){
+  ctx=ctx||{};
+  const rel=FB.items.filter(f=>f.kind!=='session');
+  if(!rel.length) return '';
+  const scored=rel.map(f=>({f,s:(f.ucid&&f.ucid===ctx.ucid?2:0)+(f.mood&&f.mood===ctx.mood?1:0)+(f.persona&&f.persona===ctx.name?1:0)}));
+  scored.sort((a,b)=>b.s-a.s||b.f.ts-a.f.ts);
+  const top=scored.slice(0,8).map(x=>x.f);
+  const lines=top.map(f=>{
+    const tg=(f.tags&&f.tags.length)?f.tags.join(', '):'';
+    if(f.kind==='gold') return '- VZOR (skóre 2) '+(f.persona||'')+': na „'+(f.custLine||'').slice(0,70)+'“ odpověděl špičkový prodejce: „'+(f.text||'').slice(0,180)+'“';
+    if(f.kind==='cust'){
+      if(f.rating==='up') return '- POTVRZENO trenérem: reakce zákazníka „'+(f.aiLine||'').slice(0,70)+'“ byla realistická — drž tento styl.';
+      return '- KOREKCE ZÁKAZNÍKA ('+(f.persona||'')+(tg?', '+tg:'')+'): reakce „'+(f.aiLine||'').slice(0,70)+'“ byla špatně'+(f.correction?'; správně by zákazník řekl: „'+f.correction.slice(0,160)+'“':'')+'.';
+    }
+    if(f.rating==='up') return '- POTVRZENO trenérem: hodnocení kouče „'+(f.aiLine||'').slice(0,70)+'“ bylo přesné.';
+    return '- KOREKCE HODNOCENÍ'+(tg?' ('+tg+')':'')+': poznámka „'+(f.aiLine||'').slice(0,70)+'“ byla nepřesná'+(f.correction?'; správně: '+f.correction.slice(0,160):'')+'.';
+  });
+  return '\n\nKALIBRACE OD TRENÉRŮ A TOP PRODEJCŮ (NEJVYŠŠÍ PRIORITA — má přednost i před obecnými pravidly výše):\n'+lines.join('\n')+'\n';
+}
+function buildMaterials(){
+  const act=FB.mats.filter(m=>m.active).slice(0,3);
+  if(!act.length) return '';
+  return '\n\nDALŠÍ ŠKOLICÍ PODKLADY OD TRENÉRŮ (závazný vstup):\n'+act.map(m=>'### '+m.title+'\n'+m.text.slice(0,1500)).join('\n')+'\n';
+}
+
+/* ---------- UI obrazovka AI Trénink ---------- */
+function fbStats(){
+  const i=FB.items;
+  return {hod:i.length, kor:i.filter(f=>f.rating==='down'&&f.correction).length, gold:i.filter(f=>f.kind==='gold').length, mat:FB.mats.length};
+}
+function vAiTrain(){
+  const st=fbStats();
+  return `<div class="pad">
+    <button class="backbtn" onclick="go('profile')">‹ Profil</button>
+    <span class="eyebrow">AI Trénink · pro trenéry a top prodejce</span>
+    <h1 class="h-lg" style="margin:8px 0 6px">Nauč model<br>fungovat perfektně</h1>
+    <p class="sub" style="margin-bottom:14px">Simuluj rozhovory, hodnoť každou reakci AI a přidávej podklady. Tvoje zpětná vazba má <b style="color:var(--text)">nejvyšší prioritu</b> — model se jí okamžitě řídí a zároveň se sbírá dataset pro trvalé doučení.</p>
+    <div class="grid3 fade" style="margin-bottom:6px">
+      <div class="stat"><div class="sv">${st.hod}</div><div class="sl">Hodnocení</div></div>
+      <div class="stat"><div class="sv" style="color:var(--amber)">${st.kor}</div><div class="sl">Korekce</div></div>
+      <div class="stat"><div class="sv" style="color:var(--green)">${st.gold}</div><div class="sl">Vzorové odpovědi</div></div>
+    </div>
+    <p class="tiny" style="margin-bottom:14px">${FB_PERSIST?'💾 Ukládá se trvale (přetrvá mezi relacemi).':'⚠ Trvalé úložiště není dostupné — data drží jen tato relace. Používej Export níže.'}</p>
+
+    <div class="card hot fade">
+      <span class="eyebrow">Kalibrační rozhovor</span>
+      <p class="sub" style="margin:8px 0 10px">Hraješ prodejce proti AI zákazníkovi. Po každé výměně ohodnotíš realismus zákazníka i přesnost kouče — a můžeš uložit svoji odpověď jako vzor.</p>
+      <div class="chiprow" style="margin-bottom:12px">
+        ${UC.map(u=>`<button class="chip ${S.ucSel===u.id?'mag':''}" style="cursor:pointer;border:none" onclick="setUc('${u.id}')">${u.n}</button>`).join('')}
+      </div>
+      <button class="btn mini" onclick="startCalib()">🎤 Spustit kalibraci</button>
+    </div>
+
+    <div class="card fade d1">
+      <span class="eyebrow mut">📚 Školicí podklady pro model (${st.mat})</span>
+      <p class="tiny" style="margin:6px 0 10px">Vlož text, nebo nahraj .txt/.md/.pdf. Aktivní podklady se stávají závazným vstupem AI zákazníka i kouče.</p>
+      <input type="text" id="matTitle" placeholder="Název podkladu (např. Nová letní nabídka)" style="margin-bottom:8px">
+      <textarea class="fallback" id="matText" placeholder="Vlož obsah podkladu…"></textarea>
+      <div class="row" style="gap:8px;margin-top:8px">
+        <button class="btn ghost mini" style="flex:1" onclick="matSaveText()">＋ Uložit text</button>
+        <label class="btn ghost mini" style="flex:1;cursor:pointer">📎 Nahrát soubor<input type="file" accept=".txt,.md,.pdf" style="display:none" onchange="matUpload(event)"></label>
+      </div>
+      ${FB.mats.map(m=>`
+        <div class="row between" style="padding:10px 0;border-bottom:1px solid var(--line)">
+          <div style="flex:1;min-width:0"><div style="font-size:12.5px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${m.title}</div><div class="tiny">${m.text.length} znaků</div></div>
+          <div class="row" style="gap:6px">
+            <button class="tagbtn ${m.active?'on':''}" onclick="matToggle(${m.id})">${m.active?'aktivní':'vypnuto'}</button>
+            <button class="tagbtn" onclick="matDel(${m.id})">✕</button>
+          </div>
+        </div>`).join('')}
+    </div>
+
+    <div class="card fade d2">
+      <span class="eyebrow mut">🗂 Poslední zpětná vazba</span>
+      ${FB.items.length?FB.items.slice(0,8).map((f,i)=>`
+        <div style="padding:10px 0;border-bottom:1px solid var(--line)">
+          <div class="row between">
+            <span class="chip ${f.kind==='gold'?'grn':(f.rating==='down'?'red':'grn')}" style="font-size:10px">${f.kind==='gold'?'⭐ vzor':(f.kind==='cust'?'zákazník':(f.kind==='session'?'rozhovor':'kouč'))} ${f.rating==='down'?'👎':(f.rating==='up'?'👍':'')}</span>
+            <button class="tagbtn" onclick="fbDel(${f.ts})">✕</button>
+          </div>
+          <p class="tiny" style="margin-top:6px;line-height:1.5">${(f.correction||f.text||f.aiLine||f.note||'').slice(0,110)}</p>
+        </div>`).join(''):'<p class="tiny" style="margin-top:8px">Zatím žádná — spusť kalibrační rozhovor.</p>'}
+    </div>
+
+    <div class="card flat fade d3">
+      <span class="eyebrow mut">Produkční pipeline</span>
+      <p class="tiny" style="margin:8px 0 10px">Export je JSONL dataset (kontext → výstup AI → hodnocení → korekce trenéra) připravený pro fine-tuning. V demu se model učí okamžitě kalibračním kontextem.</p>
+      <div class="row" style="gap:8px">
+        <button class="btn ghost mini" style="flex:1" onclick="fbExport()">⬇ Export JSONL</button>
+        <label class="btn ghost mini" style="flex:1;cursor:pointer">⬆ Import<input type="file" accept=".json,.jsonl" style="display:none" onchange="fbImport(event)"></label>
+        <button class="btn ghost mini" onclick="fbClear()">🗑</button>
+      </div>
+    </div>
+  </div>`;
+}
+function matSaveText(){
+  const t=$('matTitle'), x=$('matText');
+  if(!x||!x.value.trim()){ toast('Vlož obsah podkladu'); return; }
+  matAdd((t&&t.value.trim())||'Podklad bez názvu', x.value.trim());
+  toast('Podklad uložen — model s ním počítá ✓'); render(true);
+}
+function matUpload(ev){
+  const file=ev.target.files[0]; if(!file) return;
+  if(/\.pdf$/i.test(file.name)){
+    const rd=new FileReader();
+    rd.onload=async()=>{
+      toast('Extrahuji obsah PDF přes AI…');
+      try{
+        const b64=rd.result.split(',')[1];
+        const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({model:MODEL_TIERS.deep_coach,max_tokens:1000,messages:[{role:'user',content:[
+            {type:'document',source:{type:'base64',media_type:'application/pdf',data:b64}},
+            {type:'text',text:'Vytáhni z dokumentu vše podstatné pro trénink podomního prodeje T-Mobile (fakta, čísla, argumenty, pravidla) jako stručné odrážky v češtině. Jen odrážky, nic jiného.'}]}]})});
+        if(!res.ok) throw 0;
+        const data=await res.json();
+        const text=(data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n');
+        matAdd(file.name,text); toast('PDF zpracováno a uloženo ✓'); render(true);
+      }catch(e){ toast('PDF vyžaduje online režim — vlož text ručně'); }
+    };
+    rd.readAsDataURL(file);
+  } else {
+    const rd=new FileReader();
+    rd.onload=()=>{ matAdd(file.name,String(rd.result)); toast('Soubor uložen ✓'); render(true); };
+    rd.readAsText(file);
+  }
+}
+function matToggle(id){ const m=FB.mats.find(x=>x.id===id); if(m){m.active=!m.active; fbSave(); render(true);} }
+function matDel(id){ FB.mats=FB.mats.filter(x=>x.id!==id); fbSave(); render(true); }
+function fbDel(ts){ FB.items=FB.items.filter(x=>x.ts!==ts); fbSave(); render(true); }
+function fbClear(){ if(FB.items.length&&!confirm('Smazat všechnu zpětnou vazbu i podklady?'))return; FB={items:[],mats:[]}; fbSave(); render(true); }
+function fbExport(){
+  const lines=FB.items.map(f=>JSON.stringify({type:f.kind,scenario:{uc:f.ucid,persona:f.persona,mood:f.mood,dif:f.dif},context:f.custLine||'',ai_output:f.aiLine||'',rating:f.rating||null,tags:f.tags||[],trainer_correction:f.correction||f.text||'',note:f.note||'',ts:f.ts,priority:f.priority}));
+  const blob=new Blob([lines.join('\n')],{type:'application/jsonl'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='field-hero-finetune-dataset.jsonl'; a.click();
+  toast('Dataset exportován ('+lines.length+' záznamů)');
+}
+function fbImport(ev){
+  const file=ev.target.files[0]; if(!file) return;
+  const rd=new FileReader();
+  rd.onload=()=>{ try{
+    const txt=String(rd.result).trim();
+    const arr=txt.startsWith('[')?JSON.parse(txt):txt.split('\n').map(l=>JSON.parse(l));
+    arr.forEach(r=>FB.items.push({kind:r.type||'cust',ucid:r.scenario&&r.scenario.uc,persona:r.scenario&&r.scenario.persona,mood:r.scenario&&r.scenario.mood,custLine:r.context,aiLine:r.ai_output,rating:r.rating,tags:r.tags,correction:r.trainer_correction,ts:r.ts||Date.now(),priority:r.priority||'high'}));
+    fbSave(); toast('Import hotov: '+arr.length+' záznamů'); render(true);
+  }catch(e){ toast('Soubor se nepodařilo načíst'); } };
+  rd.readAsText(file);
+}
+function startCalib(){ S.trainerMode=true; RP_FROM_MISSION=false; VR_SCEN=genScenario(S.ucSel); startVoiceRp(); }
+
+/* ================= ROUTER ================= */
+const VIEWS={
+  welcome:vWelcome, assess:vAssess, skillmap:vSkillmap,
+  today:vToday, mission:vMission, ready:vReady,
+  learn:vLearn, winthedoor:vWinTheDoor, archetypes:vArchetypes, archetype:vArchetype,
+  lesson:vLesson,
+  rpsetup:vRpSetup, voicerp:vVoicerp, voicerpresult:vVoiceRpResult, drill:vDrill, lesson2:vLesson2, products:vProducts, aitrain:vAiTrain,
+  sell:vSell, bottleneck:vBottleneck, entry:vEntry, earnings:vEarnings,
+  community:vCommunity, tip:vTip, league:vLeague,
+  profile:vProfile, team:vTeam, studio:vStudio,
+};
+function render(keep){
+  const sc=$('screen');
+  const top=keep?sc.scrollTop:0;
+  sc.innerHTML=(VIEWS[S.screen]||vToday)();
+  renderTabbar();
+  if(keep) sc.scrollTop=top;
+}
+S.trainerMode=false;
+stLoad();
+fbLoad().then(()=>{ if(S.screen==='aitrain') render(true); });
+render();
+</script>
+</body>
+</html>
