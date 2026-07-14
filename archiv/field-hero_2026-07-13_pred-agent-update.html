@@ -246,8 +246,6 @@ const S = {
   funnel: { doors: 46, opened: 29, conv: 18, meaningful: 9, inside: 4, offers: 3, sales: 2 },
   products: { fiber: 2, tv: 1, bundle: 1 },
   readyDone: [],
-  readyXPGiven: false,
-  onboardActive: false, onboardStage: null, diagRP: null, pquizCats: {},
   missionSteps: [false,false,false,false],
   assessIdx: 0, assessScore: 0, aState:'ask', aLast:null,
   rpStep: 0, rpScore: 0, rpLog: [],
@@ -257,8 +255,6 @@ const S = {
 const $ = id => document.getElementById(id);
 function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._x); t._x=setTimeout(()=>t.classList.remove('show'),2200); }
 function addXP(n){ S.xp+=n; toast('+'+n+' XP 🎉'); stSaveSoon(); }
-const REVEALED_MODELS=new Set();
-function revealModel(id,xp){ if(REVEALED_MODELS.has(id)) return; const el=$(id); if(el&&el.style.display==='none'){ el.style.display='block'; REVEALED_MODELS.add(id); if(xp) addXP(xp); } }
 function go(sc, keepScroll){ S.screen=sc; render(); if(!keepScroll) $('screen').scrollTop=0; }
 function pct(a,b){ return b? Math.round(a/b*100) : 0; }
 function fmt(n){ return n.toLocaleString('cs-CZ'); }
@@ -289,7 +285,7 @@ const ICONS = {
 
 /* ================= TAB BAR ================= */
 const TABS=[['today','Dnes'],['learn','Učení'],['sell','Prodej'],['community','Komunita'],['profile','Profil']];
-const TAB_MAP={ ready:'today',mission:'today',lesson:'learn',lesson2:'learn',products:'learn',pquiz:'learn',prep:'learn',close:'learn',winthedoor:'learn',archetypes:'learn',archetype:'learn',roleplay:'learn',rpresult:'learn',rpsetup:'learn',voicerp:'learn',voicerpresult:'learn',drill:'learn',entry:'sell',bottleneck:'sell',earnings:'sell',tip:'community',league:'community',team:'profile',studio:'profile',aitrain:'profile',studioResult:'profile' };
+const TAB_MAP={ ready:'today',mission:'today',lesson:'learn',lesson2:'learn',products:'learn',winthedoor:'learn',archetypes:'learn',archetype:'learn',roleplay:'learn',rpresult:'learn',rpsetup:'learn',voicerp:'learn',voicerpresult:'learn',drill:'learn',entry:'sell',bottleneck:'sell',earnings:'sell',tip:'community',league:'community',team:'profile',studio:'profile',aitrain:'profile',studioResult:'profile' };
 function renderTabbar(){
   const active = TAB_MAP[S.screen] || S.screen;
   const hide = !S.onboarded;
@@ -309,25 +305,9 @@ function vWelcome(){
         <span class="chip mag">Fiber internet</span><span class="chip mag">Magenta TV</span><span class="chip">D2D prodej</span>
       </div>
     </div>
-    <button class="btn fade d4" onclick="startOnboarding()">Začít vstupní diagnostiku</button>
-    <p class="tiny fade d4" style="text-align:center;margin-top:12px">Kompletní role-play u dveří + produktový test · 6–8 minut · přizpůsobí ti celou aplikaci</p>
+    <button class="btn fade d4" onclick="go('assess')">Začít vstupní diagnostiku</button>
+    <p class="tiny fade d4" style="text-align:center;margin-top:12px">3 minuty · přizpůsobí ti celou aplikaci</p>
   </div>`;
-}
-/* ================= VSTUPNÍ DIAGNOSTIKA — kompletní role-play, ne izolované otázky =================
-   Prvotní ověření znalostí odehraje celý 5fázový rozhovor s AI zákazníkem (stejný engine
-   jako volný trénink), teprve pak doplňkový produktový test. Mapa dovedností se počítá
-   z obojího, ne z předvyplněných demo čísel.
-   Pozn.: starší 3otázkový ASSESS/vAssess flow zůstává v kódu funkční (nedestruktivní
-   ponechání), jen už na něj nevede uvítací tlačítko. */
-let ONBOARD_MODE=false;
-let ONBOARD_RETRIED=false;
-let ONBOARD_ATTEMPT1=null;
-function startOnboarding(){
-  ONBOARD_MODE=true; S.diagRP=null; S.pquizCats={};
-  ONBOARD_RETRIED=false; ONBOARD_ATTEMPT1=null;
-  S.onboardActive=true; S.onboardStage='rp'; stSaveSoon();
-  S.ucSel='panelak'; VR_SCEN=genScenario('panelak', true);
-  go('rpsetup');
 }
 
 const ASSESS = [
@@ -433,7 +413,6 @@ Vždy navíc platí etický kodex T-Mobile Osobně: nikdy nepomlouvej konkurenci
 Škála skóre: 0–20 slabá/chybná odpověď, 21–50 částečná (chybí klíčový prvek kritérií), 51–75 dobrá s drobnou mezerou, 76–100 vzorová odpověď.
 PŘIJATELNÉ VZOROVÉ ODPOVĚDI PRO TUTO SITUACI (kalibrace — jde o rozmezí toho, co je „vzorové", ne jedinou správnou větu; podobně kvalitní odpověď v jiných slovech hodnoť stejně vysoko):
 ${a.models.map(m=>'- '+m).join('\n')}
-${AGENT_RULES}
 ${buildCalibration({})}${buildMaterials()}
 Vrať POUZE validní JSON:
 {"skore":0,"fb":"1–2 věty česky, konkrétně co bylo dobře a co zlepšit"}`,'drill_eval');
@@ -455,44 +434,27 @@ function assessNext(){
   if(S.assessIdx>=ASSESS.length){ S.aState='ask'; go('skillmap'); } else render();
 }
 function vSkillmap(){
-  const sorted=[...S.skills].sort((a,b)=>b[1]-a[1]);
-  const strongest=sorted[0], weakest=sorted[sorted.length-1];
-  const fromDiag=!!S.diagRP;
   return `<div class="pad-flow">
     <span class="eyebrow">Výsledek diagnostiky</span>
     <h1 class="h-lg" style="margin:8px 0 6px">Tvoje prodejní<br>mapa dovedností</h1>
-    <p class="sub" style="margin-bottom:20px">${fromDiag?'Spočítáno z tvého kompletního role-play rozhovoru a produktového testu — ne z odhadu.':'Kombinace testu znalostí, scénářů a AI vyhodnocení.'} Skóre se dál zpřesňuje podle reálných výsledků v terénu.</p>
+    <p class="sub" style="margin-bottom:20px">Kombinace testu znalostí, scénářů a AI vyhodnocení. Skóre se dál zpřesňuje podle reálných výsledků v terénu.</p>
     <div class="card fade">
       ${S.skills.map(s=>skillBar(s[0],s[1])).join('')}
     </div>
     <div class="card hot fade d1">
       <span class="eyebrow">Co z toho plyne</span>
-      <p style="font-size:14px;font-weight:600;line-height:1.55;margin-top:8px">Jsi silný v <span style="color:var(--magenta-hi)">${strongest[0].toLowerCase()}</span>. Největší příležitost: <span style="color:var(--magenta-hi)">${weakest[0].toLowerCase()}</span> — na tohle ti postavíme prvních pár dní tréninku.</p>
+      <p style="font-size:14px;font-weight:600;line-height:1.55;margin-top:8px">Jsi silný v produktu i uvnitř domácnosti. Největší příležitost: <span style="color:var(--magenta-hi)">vstup za dveře</span> — proměnit krátký rozhovor na prahu v pozvání dovnitř.</p>
     </div>
     <button class="btn fade d2" onclick="finishOnboard()">Vytvořit můj 30denní plán</button>
   </div>`;
 }
-function finishOnboard(){ S.onboarded=true; ONBOARD_MODE=false; S.onboardActive=false; S.onboardStage=null; addXP(150); stSave(); go('today'); }
+function finishOnboard(){ S.onboarded=true; addXP(150); stSave(); go('today'); }
 
 /* ================= TODAY ================= */
-const FOCUS_SKILL_COPY={
-  'Připravenost do terénu':['Dolaď svou přípravu','Checklist přípravy ti pořád něco chybí — projdi ho v „Připravit se" ještě jednou, pořádně.'],
-  'První dojem':['Zlepši prvních 10 vteřin','Zákazník si tě „změří" hned na prahu — nacvič otvírák, ať zafunguje napoprvé.'],
-  'Otvírák rozhovoru':['Zlepši otvírák rozhovoru','Kdo jsem → proč tu jsem → respekt k času — tohle je tvoje aktuálně nejslabší místo.'],
-  'Vstup za dveře':['Získej 30 vteřin navíc','Tvoje největší příležitost je udržet pozornost zaneprázdněných zákazníků na prahu dveří.'],
-  'Zjišťování potřeb':['Polož lepší otázky','Zákazníci se ti zatím nerozpovídají o svých potřebách — cvič 3 typy otázek a implikace.'],
-  'Znalost Fiber':['Doplň si produktové znalosti','Technické argumenty o optice ti občas chybí — projeď si produktový test.'],
-  'Magenta TV nabídka':['Zapamatuj si TV argumenty','Nabídka Magenta TV ti nejde tak hladce jako internet — doplň si fakta.'],
-  'Práce s námitkami':['Zlepši práci s námitkami','Ocenění → přerámování → Found — tenhle vzorec je tvoje dnešní priorita.'],
-  'Uzavírání':['Dotáhni uzavření','Rozhovory ti běží dobře, ale uzavření vázne — nacvič tah na bránu dvěma pozitivními možnostmi.'],
-  'Cross-sell':['Objevuj příležitosti k cross-sellu','Magenta 1 a doplňkové služby ti unikají — poznej, kdy je nabídnout.'],
-};
 function vToday(){
   const f=S.funnel;
   const xpPct = Math.min(100, Math.round(S.xp/S.xpNext*100));
   const done = S.missionSteps.filter(Boolean).length;
-  const weakest=[...S.skills].sort((a,b)=>a[1]-b[1])[0];
-  const focus=FOCUS_SKILL_COPY[weakest&&weakest[0]]||['Získej 30 vteřin navíc','Tvoje největší příležitost je udržet pozornost zaneprázdněných zákazníků na prahu dveří.'];
   return `<div class="pad">
     <div class="row between" style="margin-bottom:20px">
       <div class="row" style="gap:12px">
@@ -518,11 +480,11 @@ function vToday(){
         <span class="eyebrow">Tvoje dnešní mise</span>
         <span class="chip mag">${done}/4</span>
       </div>
-      <h2 class="h-md" style="margin:10px 0 6px">${focus[0]}</h2>
-      <p class="sub">${focus[1]}</p>
+      <h2 class="h-md" style="margin:10px 0 6px">Získej 30 vteřin navíc</h2>
+      <p class="sub">Tvoje největší příležitost je udržet pozornost zaneprázdněných zákazníků na prahu dveří.</p>
       <div class="divider"></div>
       <div class="tiny" style="margin-bottom:6px;font-weight:700;letter-spacing:.08em">PROČ PRÁVĚ TOHLE?</div>
-      <p style="font-size:12.5px;color:var(--muted);line-height:1.55">Tohle je tvoje aktuálně nejslabší dovednost (${weakest?weakest[1]:0}/100) z mapy dovedností — na tu se dnes vyplatí zaměřit nejvíc.</p>
+      <p style="font-size:12.5px;color:var(--muted);line-height:1.55">Uvnitř uzavíráš <b style="color:var(--green)">52 %</b> příležitostí, ale jen <b style="color:var(--red)">21 %</b> otevřených dveří proměníš v rozhovor (benchmark kolegů: 27 %).</p>
       <button class="btn mini" style="margin-top:12px" onclick="go('mission')">Spustit Power Session · 9 min</button>
     </div>
 
@@ -605,7 +567,6 @@ const READY = [
   ['💇','Upravený vzhled'],['🎒','Srovnaná výbava'],
   ['🔋','Nabitý telefon + powerbanka'],['📄','Magentový blok, propiska, nabitý tablet'],['🏢','Souhlas SVJ / správce se vstupem ověřen'],['📜','Ověřen zákaz podomního prodeje v obci (vyhláška)'],['📱','Digitální nástroje fungují'],
   ['🧍','Reset postoje — ramena dolů, brada nahoru'],['😊','Kontrola úsměvu + energie hlasu'],
-  ['🔍','Znám konkurenci v lokalitě — fakta, ne pomluva'],['🎯','Mám konkrétní cíl dne (počet smluv + mix)'],
 ];
 function vReady(){
   const n=S.readyDone.length;
@@ -630,7 +591,7 @@ function vReady(){
       </div>
       <div id="energyTip"></div>
     </div>
-    ${n===READY.length?`<button class="btn green" onclick="${S.readyXPGiven?'':'S.readyXPGiven=true;addXP(30);'}go('today')">Jsem připraven — do terénu! 💪</button>`:''}
+    ${n===READY.length?`<button class="btn green" onclick="addXP(30);go('today')">Jsem připraven — do terénu! 💪</button>`:''}
   </div>`;
 }
 function toggleReady(i){
@@ -650,23 +611,17 @@ function render(keep){ /* placeholder replaced later */ }
 
 /* ================= LEARN ================= */
 const PATHS = [
-  ['🧭','1 · Příprava','Konkurence, cíl dne, výbava, souhlas SVJ',58,'prep'],
-  ['🎩','2 · Elegantní zahájení','Kdo jsem → proč tu jsem → „pojďme se posadit"',54,'winthedoor'],
-  ['❓','3 · Analýza potřeb','3 typy otázek + implikace + pozvání dovnitř',61,'lesson2'],
-  ['🛡️','4 · Prezentace a námitky','Příběh + užitek, vzorec ocenění → přerámování → Found',47,'lesson'],
-  ['🤝','5 · Uzavření','Tah na bránu → rekapitulace → reference',44,'close'],
-  ['📦','Produktové znalosti','Kategorizovaná databáze + test na 3 celky',68,'products'],
-  ['🧑‍🤝‍🧑','Zákaznické archetypy','10 typů zákazníků + AI trénink',52,'archetypes'],
-  ['🏆','Cesta k Team Leaderovi','Pro seniorní prodejce',22,'team']
+  ['🚪','Vyhraj dveře','5 kroků prodeje · tvoje priorita: krok 2',41,'winthedoor',true],
+  ['🎩','Elegantní zahájení','Kdo jsem → proč tu jsem → „pojďme se posadit"',54,'winthedoor'],
+  ['❓','Analýza: 3 typy otázek','Informativní · Problémové · Na přání',61,'lesson2'],
+  ['🧑‍🤝‍🧑','Zákaznické archetypy','14 typů zákazníků + AI trénink',52,'archetypes'],
+  ['🛡️','Práce s námitkami','Vzorec: ocenění → přerámování → otázka',47,'lesson'],
+  ['📦','Produktová akademie','T-Fiber · FTTx · Magenta TV Plus · Magenta 1',74,'products'],
+  ['🧮','Modelace nabídky','Magnetový papír: co máte teď vs. nová nabídka',49,'products'],
+  ['📶','Wifi Manager & Security','Dveřní otvíráky pro rodiny',58,'products'],
+  ['🤝','Uzavření a verifikace','Podpis → verifikace TOS → objednávka',64,'products'],
+  ['🏆','Cesta k Team Leaderovi','Pro seniorní prodejce',22,'winthedoor']
 ];
-const PATH_SKILL_MAP={prep:'Připravenost do terénu',winthedoor:'Otvírák rozhovoru',lesson2:'Zjišťování potřeb',lesson:'Práce s námitkami',close:'Uzavírání',products:['Znalost Fiber','Magenta TV nabídka','Cross-sell']};
-function pathPct(p){
-  const key=PATH_SKILL_MAP[p[4]];
-  if(!key) return p[3];
-  const arr=Array.isArray(key)?key:[key];
-  const vals=arr.map(k=>{ const s=S.skills.find(x=>x[0]===k); return s?s[1]:p[3]; });
-  return Math.round(vals.reduce((a,b)=>a+b,0)/vals.length);
-}
 function vLearn(){
   return `<div class="pad">
     <span class="eyebrow">Učení</span>
@@ -691,60 +646,24 @@ function vLearn(){
         <button class="btn mini" style="background:var(--amber);color:#2a1c00" onclick="startDrill()">Start</button>
       </div>
     </div>
-    ${(()=>{
-      const scored=PATHS.map((p,i)=>({i,pct:pathPct(p),mapped:!!PATH_SKILL_MAP[p[4]]})).filter(x=>x.mapped);
-      const priorityIdx=scored.length?scored.sort((a,b)=>a.pct-b.pct)[0].i:-1;
-      return PATHS.map((p,i)=>{ const pct=pathPct(p); const isPrio=i===priorityIdx; return `
+    ${PATHS.map((p,i)=>`
       <div class="listitem fade" style="animation-delay:${i*.04}s" onclick="go('${p[4]}')">
-        <div class="icobox ${isPrio?'mag':''}">${p[0]}</div>
+        <div class="icobox ${p[5]?'mag':''}">${p[0]}</div>
         <div style="flex:1">
           <div class="row between">
-            <div style="font-size:13.5px;font-weight:700">${p[1]} ${isPrio?'<span class="chip mag" style="font-size:9px;padding:2px 7px;margin-left:4px">PRIORITA</span>':''}</div>
-            <div style="font-family:var(--disp);font-weight:700;font-size:12.5px;color:var(--${pct>=70?'green':pct>=55?'amber':'red'})">${pct}</div>
+            <div style="font-size:13.5px;font-weight:700">${p[1]} ${p[5]?'<span class="chip mag" style="font-size:9px;padding:2px 7px;margin-left:4px">PRIORITA</span>':''}</div>
+            <div style="font-family:var(--disp);font-weight:700;font-size:12.5px;color:var(--${p[3]>=70?'green':p[3]>=55?'amber':'red'})">${p[3]}</div>
           </div>
           <div class="tiny" style="margin:3px 0 6px">${p[2]}</div>
-          <div class="bar" style="height:5px"><i class="${skillColor(pct)}" style="width:${pct}%"></i></div>
+          <div class="bar" style="height:5px"><i class="${skillColor(p[3])}" style="width:${p[3]}%"></i></div>
         </div>
-      </div>`;}).join('');
-    })()}
-  </div>`;
-}
-
-/* ================= 1. KROK: PŘÍPRAVA ================= */
-const PREP_CHECK=[
-  ['Znám konkurenci v lokalitě','Vím, co tu reálně nabízí O2/Vodafone/UPC/lokální poskytovatelé — abych argumentoval fakty, ne pomluvou.'],
-  ['Mám konkrétní cíl dne','Nejen počet zvonění — kolik smluv a jaký mix (vždy myslet i na Magenta 1).'],
-  ['Vypadám jako T-Mobile Osobně','Brand oblečení, ID karta viditelně, nabitý tablet, magentový blok, propiska.'],
-  ['Mám povolení pro danou lokalitu','Souhlas SVJ/správce se vstupem do vchodu — bez něj se návštěva nekoná.'],
-  ['Jsem mentálně nastavený/á pozitivně','Odmítnutí u předchozích dveří se nesmí propsat do tónu hlasu u dalších.'],
-];
-function vPrep(){
-  const n=S.readyDone.length;
-  return `<div class="pad">
-    <button class="backbtn" onclick="go('learn')">‹ Učení</button>
-    <span class="eyebrow">1. krok prodeje</span>
-    <h1 class="h-lg" style="margin:8px 0 6px">Příprava</h1>
-    <p class="sub" style="margin-bottom:16px">Cíl: <b style="color:var(--text)">kdo je připraven, není překvapen.</b> Tenhle krok se neděje u dveří — děje se v autě pět minut předtím. Stejný checklist jako v „Dnes" — vyplň ho jednou, platí všude.</p>
-    <div class="card fade">
-      <span class="eyebrow mut">Checklist před zazvoněním (${n}/${READY.length})</span>
-      <div style="margin-top:12px">
-      ${READY.map((r,i)=>{
-        const d=S.readyDone.includes(i);
-        return `<div class="check ${d?'done':''}" onclick="toggleReady(${i})"><div class="box">${d?'✓':''}</div><div style="font-size:17px">${r[0]}</div><div class="ct">${r[1]}</div></div>`;
-      }).join('')}
-      </div>
-    </div>
-    <div class="card hot fade d1">
-      <span class="eyebrow">Etický kodex — mantinely, ne doporučení</span>
-      <p style="font-size:12.5px;line-height:1.7;margin-top:8px;color:var(--muted)">Nikdy nepomlouváš konkurenci, nikdy netvrdíš že „konkurence končí“. Vždy sdělíš kompletní informaci — konečnou cenu, proces instalace (vrtání), proces výpovědi. Tohle platí ve všech 5 krocích, ne jen v tomto.</p>
-    </div>
-    ${n===READY.length&&!S.readyXPGiven?`<button class="btn green" onclick="S.readyXPGiven=true;addXP(30);go('winthedoor')">Jsem připraven — pokračovat ›</button>`:`<button class="btn fade d2" onclick="go('winthedoor')">Pokračovat na Elegantní zahájení ›</button>`}
+      </div>`).join('')}
   </div>`;
 }
 
 /* ================= WIN THE DOOR ================= */
 function vWinTheDoor(){
-  const kroky=[['1','Příprava','vzhled, výbava, souhlas SVJ, vyhláška'],['2','Elegantní zahájení','kdo jsem → proč tu jsem → posadit se'],['3','Analýza','3 typy otázek + magnetový papír'],['4','Prezentace','vazba na bolest → příběh → zvládání námitek'],['5','Uzavření','tah na bránu → rekapitulace → reference']];
+  const kroky=[['1','Příprava','vzhled, výbava, souhlas SVJ, vyhláška'],['2','Elegantní zahájení','kdo jsem → proč tu jsem → posadit se'],['3','Analýza','3 typy otázek + magnetový papír'],['4','Modelace','srovnání: co máte teď vs. nová nabídka'],['5','Uzavření','podpis → verifikace → objednávka']];
   return `<div class="pad">
     <button class="backbtn" onclick="go('learn')">‹ Učení</button>
     <span class="eyebrow">Metodika TOS</span>
@@ -771,8 +690,7 @@ function vWinTheDoor(){
         <b style="color:var(--text)">1 · KDO JSEM</b> — jméno + „zástupce specializovaného oddělení T-Mobile Osobně" + průkaz<br>
         <b style="color:var(--text)">2 · PROČ TU JSEM</b> — oznámení ve vchodě / dohoda se správcem: „předat informace o možnostech optické sítě a výhodách"<br>
         <b style="color:var(--text)">3 · OVĚŘENÍ</b> — „Viděl jste ho?" (ano → „to jste mi ulehčil práci" / ne → „to nevadí")<br>
-        <b style="color:var(--text)">4 · CO PO NĚM CHCI</b> — „Pojďme se k tomu rovnou posadit. Budu co nejefektivnější, ať vás nezdržím."<br>
-        <b style="color:var(--text)">5 · PERMISSION-LINE</b> — „Pokud vám to, co vám ukážu, nebude dávat smysl, kdykoliv mi to řekněte a já vás nebudu dál zdržovat." Paradoxně snižuje počet lidí, kteří odejdou hned na začátku — dává jim kontrolu.
+        <b style="color:var(--text)">4 · CO PO NĚM CHCI</b> — „Pojďme se k tomu rovnou posadit. Budu co nejefektivnější, ať vás nezdržím."
       </div>
     </div>
 
@@ -909,11 +827,6 @@ function vLesson(){
     <h1 class="h-lg" style="margin-bottom:6px">„Jsem věrný svému poskytovateli"</h1>
     <p class="sub" style="margin-bottom:16px">Námitka není „ne". Metodický vzorec: <b style="color:var(--text)">ocenění → přerámování → otázka.</b></p>
     <div class="card fade">
-      <span class="eyebrow mut">Prezentuj řešení, ne produkt · 1 min</span>
-      <p style="font-size:13.5px;line-height:1.6;margin-top:8px">Nikdy neprezentuj produkt — prezentuj řešení toho, co zákazník řekl v Analýze. Vazba na jeho vlastní slova: <i style="color:var(--magenta-hi)">„Říkal jste, že vás štve, když internet večer zlobí, když je celá rodina online — přesně na tohle je T-Fiber s Wi-Fi 6 a víc anténami stavěný, takže…"</i> Příběh, ne specifikace: místo „modem má 4 LAN porty a Wi-Fi 6" řekni „film na Netflixu poběží stejně plynule, jako když si vedle dcera pustí hru."</p>
-      <p style="font-size:12.5px;line-height:1.6;margin-top:10px;color:var(--muted)"><b style="color:var(--text)">Magenta 1</b> — jakmile má zákazník 2+ služby, vždy spočítej konkrétní % slevu na místě (10–25 % podle počtu služeb), nikdy nemluv obecně o „výhodné slevě".</p>
-    </div>
-    <div class="card fade d1">
       <span class="eyebrow mut">Koncept · 1 min</span>
       <p style="font-size:13.5px;line-height:1.6;margin-top:8px">Nikdy nezpochybňuj zákazníkovu volbu — a <b>nikdy nepomlouvej konkurenci</b> (etický kodex). Nejdřív věrnost oceň, pak polož otázku: <i style="color:var(--magenta-hi)">„Skvělé, věrnost oceňuji. Jaké speciální výhody vám za ni poskytovatel dal?"</i> Ticho po téhle otázce pracuje za tebe.</p>
     </div>
@@ -935,13 +848,6 @@ function vLesson(){
         <b style="color:var(--text)">„Proberu to s partnerkou"</b> → „Výborně. Je partnerka teď doma? Můžeme jí zavolat? Pokud ne, kdy to spolu proberete?"
       </div>
     </div>
-    <div class="card hot fade d2">
-      <span class="eyebrow">Třetí krok, který většina prodejců vynechá: „Found"</span>
-      <p style="font-size:12.5px;line-height:1.65;margin-top:8px;color:var(--muted)">Ocenění a přerámování nestačí — přidej konkrétní příklad jiného spokojeného zákazníka. <i style="color:var(--magenta-hi)">„Podobnou obavu měl minulý týden soused ve třetím patře — dneska mi psal, že je nadšený."</i> Sociální důkaz přesvědčí líp než jakýkoliv argument.</p>
-      <p class="tiny" style="margin:10px 0 6px">Zkus sám/sama: k námitce „To je moc drahé" vymysli a řekni nahlas vlastní Found větu (jiný spokojený zákazník + výsledek).</p>
-      <button class="btn ghost mini" onclick="revealModel('foundModel',15)">Porovnat se vzorem</button>
-      <div id="foundModel" style="display:none;margin-top:8px"><p style="font-size:12.5px;line-height:1.55;color:var(--muted)">Vzor: <i style="color:var(--magenta-hi)">„Rozumím té obezřetnosti k ceně. Podobnou obavu měl minulý týden soused ve třetím patře — dneska mi psal, kolik reálně ušetřil, když si to spočítal na papíře."</i> +15 XP</p></div>
-    </div>
     <div class="card flat fade d3">
       <span class="eyebrow mut">Terénní mise</span>
       <p style="font-size:13px;line-height:1.55;margin-top:8px">Dnes u <b>3 věrných zákazníků</b> použij vzorec ocenění → otázka na výhody za věrnost. Večer zapiš, kolik z nich pokračovalo v rozhovoru.</p>
@@ -950,7 +856,6 @@ function vLesson(){
   </div>`;
 }
 function lessonFb(i){
-  if($('lessonFb').innerHTML) return;
   const ok=i===0;
   if(ok) addXP(20);
   $('lessonFb').innerHTML=`<p style="font-size:12.5px;line-height:1.55;margin-top:6px;color:var(--${ok?'green':'amber'})">${ok
@@ -967,30 +872,20 @@ const L2Q=[
  ['„Jak moc by vám zjednodušilo život mít vše na jedné faktuře a jednoho partnera na všechno?"',2],
 ];
 let L2={i:0,ok:0};
-let L2ORDER=null;
 const L2T=['Informativní','Problémová','Na přání'];
 function vLesson2(){
-  if(!L2ORDER) L2ORDER=[...L2Q.keys()].sort(()=>Math.random()-.5);
   if(L2.i>=L2Q.length){
     const res=L2.ok; const done=res>=4;
-    return `<div class="pad"><button class="backbtn" onclick="L2={i:0,ok:0};L2ORDER=null;go('learn')">‹ Učení</button>
+    return `<div class="pad"><button class="backbtn" onclick="L2={i:0,ok:0};go('learn')">‹ Učení</button>
       <div style="text-align:center;margin:26px 0 18px">${ring(Math.round(res/L2Q.length*100),100,8,done?'var(--green)':'var(--amber)')}
       <h1 class="h-md" style="margin-top:12px">${res}/${L2Q.length} správně ${done?'· +60 XP 🎉':''}</h1></div>
       <div class="card"><span class="eyebrow mut">Zapamatuj si</span>
       <p style="font-size:13px;line-height:1.65;margin-top:8px"><b>Informativní</b> = fakta a současný stav (zákazník zaměřený na data).<br><b>Problémové</b> = nespokojenost a omezení (zákazník hledá řešení).<br><b>Na přání</b> = vize a ideální stav (zákazník motivovaný emocí).<br><br>Podle toho, na které otázky se zákazník rozpovídá, přizpůsob celou prezentaci.</p></div>
-      <div class="card hot"><span class="eyebrow">Vylepšení nad rámec základní metodiky</span>
-      <p style="font-size:12.5px;line-height:1.65;margin-top:8px;color:var(--muted)">Po problémové otázce přidej <b style="color:var(--text)">implikační otázku</b> — co ten problém pro zákazníka konkrétně znamená (čas, peníze, klid, rodina). Zvyšuje to naléhavost mnohem víc než samotné zjištění problému. A cíl kroku není jen se zeptat — je dostat se <b style="color:var(--text)">dovnitř k stolu</b>, kde modelace na papíře skutečně funguje.</p></div>
-      <div class="card flat">
-        <span class="eyebrow mut">Zkus sám/sama · řekni nahlas</span>
-        <p class="tiny" style="margin:6px 0 8px">K problémové otázce „Stává se vám, že se večer internet znatelně zpomalí, když je rodina online?" vymysli a vyslov implikační otázku — co ten problém pro zákazníka konkrétně znamená.</p>
-        <button class="btn ghost mini" onclick="revealModel('impModel',15)">Porovnat se vzorem</button>
-        <div id="impModel" style="display:none;margin-top:8px"><p style="font-size:12.5px;line-height:1.55;color:var(--muted)">Vzor: <i style="color:var(--magenta-hi)">„A když internet takhle vypadne zrovna, když děti mají video-hovor do školy nebo vy jednáte pracovně — co to s vámi udělá?"</i> +15 XP</p></div>
-      </div>
-      <button class="btn" onclick="${done?'addXP(60);':''}L2={i:0,ok:0};L2ORDER=null;go('learn')">Hotovo</button></div>`;
+      <button class="btn" onclick="${done?'addXP(60);':''}L2={i:0,ok:0};go('learn')">Hotovo</button></div>`;
   }
-  const q=L2Q[L2ORDER[L2.i]];
+  const q=L2Q[L2.i];
   return `<div class="pad">
-    <button class="backbtn" onclick="L2={i:0,ok:0};L2ORDER=null;go('learn')">‹ Učení</button>
+    <button class="backbtn" onclick="L2={i:0,ok:0};go('learn')">‹ Učení</button>
     <span class="eyebrow">Analýza · 3. krok prodeje</span>
     <h1 class="h-lg" style="margin:8px 0 6px">3 typy otázek</h1>
     <p class="sub" style="margin-bottom:14px">Úspěšný prodej není o tom, co říkáš ty, ale co zjistíš od zákazníka. Zařaď otázku ke správnému typu.</p>
@@ -1003,81 +898,19 @@ function vLesson2(){
   </div>`;
 }
 function l2Answer(j){
-  if($('l2fb').innerHTML) return;
-  const q=L2Q[L2ORDER[L2.i]]; const ok=j===q[1];
+  const q=L2Q[L2.i]; const ok=j===q[1];
   if(ok) L2.ok++;
   const why=['zjišťuje fakta a současný stav','míří na nespokojenost — zákazník se rozpovídá o problémech','maluje ideální stav a pracuje s emocí'][q[1]];
   $('l2fb').innerHTML=`<p style="font-size:12.5px;margin-top:12px;color:var(--${ok?'green':'red'})">${ok?'✓ Správně':'✗ Je to '+L2T[q[1]]+' otázka'} — ${why}.</p>`;
-  setTimeout(()=>{L2.i++;if(L2.i>=L2Q.length) skillsUpdate('Zjišťování potřeb',Math.round(L2.ok/L2Q.length*100));render();},1400);
-}
-
-/* ================= 5. KROK: UZAVŘENÍ ================= */
-function vClose(){
-  return `<div class="pad">
-    <button class="backbtn" onclick="go('learn')">‹ Učení</button>
-    <span class="eyebrow">5. krok prodeje</span>
-    <h1 class="h-lg" style="margin:8px 0 6px">Uzavření</h1>
-    <p class="sub" style="margin-bottom:16px">Cíl: <b style="color:var(--text)">znásob svůj výdělek.</b> Tah na bránu, rekapitulace, reference — v tomto pořadí, ne náhodou.</p>
-    <div class="card fade">
-      <span class="eyebrow mut">Tah na bránu — standardizovaná forma</span>
-      <p style="font-size:12.5px;line-height:1.7;margin-top:8px;color:var(--muted)">Nikdy binární „chcete to?“. Vždy <b style="color:var(--text)">dvě pozitivní možnosti</b>: <i style="color:var(--magenta-hi)">„Super, tak si to pojďme rovnou sepsat — budete chtít instalaci spíš dopoledne, nebo odpoledne?“</i></p>
-    </div>
-    <div class="card fade d1">
-      <span class="eyebrow mut">Rekapitulace — tři věci nahlas</span>
-      <p style="font-size:12.5px;line-height:1.7;margin-top:8px;color:var(--muted)">
-      <b style="color:var(--text)">Prodej</b> — co přesně, za kolik, na jak dlouho, co bude po akční ceně.<br>
-      <b style="color:var(--text)">Instalace</b> — kdy, jak dlouho, vrtání ano/ne.<br>
-      <b style="color:var(--text)">Verifikace</b> — zákazník ví, že mu zavolá TOS backoffice, ať zvedne telefon a má doklad po ruce. Bez podpisu jde objednávka do verifikace — řekni to předem, sníží to storna.</p>
-      <p class="tiny" style="margin:10px 0 6px">Zkus sám/sama: nahlas zrekapituluj fiktivní prodej (T-Fiber 500, akce 299 Kč/12 měsíců, instalace úterý, verifikace zítra) — všechny tři body v jedné souvislé řeči.</p>
-      <button class="btn ghost mini" onclick="revealModel('recapModel',15)">Porovnat se vzorem</button>
-      <div id="recapModel" style="display:none;margin-top:8px"><p style="font-size:12.5px;line-height:1.55;color:var(--muted)">Vzor: <i style="color:var(--magenta-hi)">„Takže si to shrneme — T-Fiber 500, teď za akční 299 korun na 12 měsíců, pak 549. Instalace v úterý, zabere to zhruba dvě hodiny, žádné vrtání navíc. A zítra vám ještě zavolá naše centrum na potvrzení, tak si prosím zvedněte telefon a mějte po ruce doklad."</i> +15 XP</p></div>
-    </div>
-    <div class="card hot fade d2">
-      <span class="eyebrow">Reference — poslední krok, ne bonus navíc</span>
-      <p style="font-size:12.5px;line-height:1.7;margin-top:8px;color:var(--muted)">Ochota doporučit je nejvyšší hned po podpisu. <i style="color:var(--magenta-hi)">„Mimochodem, znáte tu ještě někoho ze sousedů, koho by tohle taky mohlo zajímat?“</i></p>
-      <p class="tiny" style="margin:10px 0 6px">Zkus sám/sama: řekni nahlas svou vlastní žádost o referenci, hned po podpisu.</p>
-      <button class="btn ghost mini" onclick="revealModel('refModel',15)">Porovnat se vzorem</button>
-      <div id="refModel" style="display:none;margin-top:8px"><p style="font-size:12.5px;line-height:1.55;color:var(--muted)">Vzor: <i style="color:var(--magenta-hi)">„Mockrát děkuji. Mimochodem, znáte tu ještě někoho ze sousedů, koho by tohle taky mohlo zajímat? Klidně mu můžu říct, že jsme spolu mluvili."</i> +15 XP</p></div>
-    </div>
-    <div class="card hot fade d2" style="border-color:rgba(255,90,110,.35)">
-      <span class="eyebrow">Když se neuzavře — povinný krok, ne rezignace</span>
-      <p style="font-size:12.5px;line-height:1.7;margin-top:8px;color:var(--muted)">„Rozmyslím si to" nebo „proberu s partnerem" není konec rozhovoru — je to práce beze schůzky. Až 80 % obchodů se uzavírá až při druhém kontaktu. Nikdy neodcházej bez konkrétního dne a času: <i style="color:var(--magenta-hi)">„Chápu. Kdy vám mohu zavolat — zítra večer, nebo raději ve čtvrtek?"</i> „Ozvu se" bez termínu se v terénu rovná ztracenému leadu.</p>
-    </div>
-    <div class="card fade d3">
-      <span class="eyebrow mut">Rychlá kontrola: která věta je správný tah na bránu?</span>
-      <button class="choice" onclick="closeEx(0)">„Tak co, chcete to?“</button>
-      <button class="choice" onclick="closeEx(1)">„Pojďme to sepsat — instalace spíš tento týden, nebo příští?“</button>
-      <button class="choice" onclick="closeEx(2)">„Rozmyslete si to a klidně mi zavolejte.“</button>
-      <div id="closeFb"></div>
-    </div>
-    <div class="card fade d4" style="border-color:rgba(255,176,32,.35)">
-      <span class="eyebrow mut">Teď nahlas — ne klikni, ale řekni</span>
-      <p style="font-size:12.5px;line-height:1.6;margin-top:8px;color:var(--muted)">Frázi si zapamatuješ tak, že ji vyslovíš, ne že poznáš správnou možnost. Zákazník čeká na tvůj tah na bránu — řekni ho nahlas, AI kouč tě ohodnotí.</p>
-      <button class="btn mini" style="margin-top:10px;background:var(--amber);color:#2a1c00" onclick="startDrill('Uzavření')">🎤 Říct tah na bránu nahlas</button>
-    </div>
-    <button class="btn" onclick="startRoleplay()">🤖 Natrénovat celý rozhovor s AI zákazníkem</button>
-  </div>`;
-}
-function closeEx(i){
-  if($('closeFb').innerHTML) return;
-  const fb=[
-    ['amb','Funguje, ale binární ano/ne dává zákazníkovi snadnou cestu k „ne“ nebo k odkladu.'],
-    ['grn','Přesně tak — dvě pozitivní možnosti, žádná z nich není „ne“. +15 XP'],
-    ['red','Tohle není tah na bránu, je to pozvánka k tomu, aby se rozhovor nikdy nedokončil.']
-  ][i];
-  if(i===1) addXP(15);
-  skillsUpdate('Uzavírání', i===1?78:38);
-  $('closeFb').innerHTML=`<p style="font-size:12.5px;line-height:1.5;margin-top:10px;color:var(--${fb[0]==='grn'?'green':fb[0]==='amb'?'amber':'red'})">${fb[1]}</p>`;
+  setTimeout(()=>{L2.i++;render();},1400);
 }
 
 /* ================= PRODUKTOVÁ AKADEMIE ================= */
 function vProducts(){
   return `<div class="pad">
     <button class="backbtn" onclick="go('learn')">‹ Učení</button>
-    <span class="eyebrow">Produktové znalosti</span>
-    <h1 class="h-lg" style="margin:8px 0 6px">Fakta ze znalostní<br>databáze, která prodávají</h1>
-    <p class="sub" style="margin-bottom:14px">Kategorizováno do 3 ucelených celků — stejné, podle kterých tě prověří produktový test.</p>
-    <span class="chip mag" style="margin-bottom:8px;display:inline-block">Celek 1 · ${PQ_CATS.fiber}</span>
+    <span class="eyebrow">Produktová akademie</span>
+    <h1 class="h-lg" style="margin:8px 0 14px">Fakta z manuálu,<br>která prodávají</h1>
     <div class="card fade">
       <span class="eyebrow mut">🌐 T-Fiber & FTTx</span>
       <p style="font-size:12.5px;line-height:1.7;margin-top:8px;color:var(--muted)">
@@ -1087,14 +920,6 @@ function vProducts(){
       · Bezdrátový internet nabízej <b style="color:var(--text)">jen když FTTH nejde</b> (po stornu technika)</p>
     </div>
     <div class="card fade d1">
-      <span class="eyebrow mut">🔌 xDSL & Cable</span>
-      <p style="font-size:12.5px;line-height:1.7;margin-top:8px;color:var(--muted)">
-      · xDSL (metalika CETIN): 50/5=549 Kč, 100/20=649 Kč (akce 299/6m), 250/100=749 Kč. Bonding = zdvojení vedení, až 2× rychlost<br>
-      · xDSL Internet 20 <b style="color:var(--text)">nenabízej aktivně</b> — jen tam, kde nic lepšího není<br>
-      · Cable (bývalý Vodafone/UPC): potřeba <b style="color:var(--text)">OKU kód</b> (hledáte spolu na Můj Vodafone), portace 14 dní, samoinstalace bez technika</p>
-    </div>
-    <span class="chip mag" style="margin:6px 0 8px;display:inline-block">Celek 2 · ${PQ_CATS.tv}</span>
-    <div class="card fade d1">
       <span class="eyebrow mut">📺 Magenta TV Plus</span>
       <p style="font-size:12.5px;line-height:1.7;margin-top:8px;color:var(--muted)">
       · Funguje na <b style="color:var(--text)">jakémkoliv internetu</b> — stačí 5 Mb/s (10 Mb/s pro 2 set-top boxy)<br>
@@ -1103,134 +928,30 @@ function vProducts(){
       · Zpětné zhlédnutí = „televize čeká na vás"</p>
     </div>
     <div class="card fade d2">
+      <span class="eyebrow mut">🔗 Magenta 1 (konvergence)</span>
+      <p style="font-size:12.5px;line-height:1.7;margin-top:8px;color:var(--muted)">
+      · Propojení mobilních a pevných služeb pod jedním RČ: min. 2, max. 9 služeb<br>
+      · Sleva <b style="color:var(--text)">10–25 %</b> podle počtu služeb (čerpají služby od 399 Kč)<br>
+      · Sdílená data 10 GB (u 20 %) / 15 GB (u 25 %), fungují v celé EU<br>
+      · <b style="color:var(--text)">Náhrada výpadku internetu mobilními daty</b> — skvělý argument na spolehlivost</p>
+    </div>
+    <div class="card fade d3">
       <span class="eyebrow mut">📶 Wifi Manager & Security — dveřní otvíráky</span>
       <p style="font-size:12.5px;line-height:1.7;margin-top:8px;color:var(--muted)">
       · Wifi Manager <b style="color:var(--text)">zdarma</b> v aplikaci Můj T-Mobile: časová pravidla („úkoly 17–18, tablet bez internetu"), internetová pauza, blokace cizích zařízení, sdílení hesla QR kódem<br>
       · Security je součástí všech tarifů Next — chrání i na mobilních datech<br>
       · Pro Manažerku domácnosti často silnější otvírák než rychlost</p>
     </div>
-    <span class="chip mag" style="margin:6px 0 8px;display:inline-block">Celek 3 · ${PQ_CATS.konv}</span>
-    <div class="card fade d3">
-      <span class="eyebrow mut">🔗 Magenta 1 (konvergence) & tarify NEXT</span>
-      <p style="font-size:12.5px;line-height:1.7;margin-top:8px;color:var(--muted)">
-      · Propojení mobilních a pevných služeb pod jedním RČ: min. 2, max. 9 služeb<br>
-      · Sleva <b style="color:var(--text)">10–25 %</b> podle počtu služeb (čerpají služby od 399 Kč)<br>
-      · Sdílená data 10 GB (u 20 %) / 15 GB (u 25 %), fungují v celé EU<br>
-      · <b style="color:var(--text)">Náhrada výpadku internetu mobilními daty</b> — skvělý argument na spolehlivost<br>
-      · NEXT U (6–26 let) obsahuje Security; u vybraných tarifů neomezená víkendová data a Alza plus</p>
-    </div>
     <div class="card fade d4">
       <span class="eyebrow mut">🤝 Uzavření a verifikace</span>
       <p style="font-size:12.5px;line-height:1.7;margin-top:8px;color:var(--muted)">
-      · Objednávka se zadává <b style="color:var(--text)">bez podepsané smlouvy</b> do verifikace (TOS backoffice) — podpis není konec práce se zákazníkem<br>
+      · Objednávka se zadává <b style="color:var(--text)">až po úspěšné verifikaci</b> (TOS backoffice) — podpis není konec práce se zákazníkem<br>
       · Řekni zákazníkovi dopředu, že mu zavolají kvůli ověření údajů — snížíš storna<br>
       · Portace: OKU kód (14 znaků); Cable portace trvá 14 dní od verifikace, samoinstalace<br>
       · Kodex: vždy <b style="color:var(--text)">konečná cena, proces instalace včetně vrtání, podmínky výpovědi</b></p>
     </div>
-    <div class="row" style="gap:10px">
-      <button class="btn ghost" style="flex:1" onclick="startDrill()">⚡ Dril námitek</button>
-      <button class="btn" style="flex:1" onclick="startPQuiz()">📝 Produktový test</button>
-    </div>
+    <button class="btn" onclick="startDrill()">⚡ Procvičit v drilu námitek</button>
   </div>`;
-}
-
-/* ================= PRODUKTOVÝ TEST — z znalostní databáze, kategorizováno do celků =================
-   Zdroj otázek: Znalostní databáze produktů (KB) sestavená z produktových školení TOS.
-   Tři ucelené celky, ať se dá rovnou vidět, kde jsou mezery. */
-const PQ_CATS={fiber:'Pevný internet (T-Fiber/FTTx/xDSL/Cable)',tv:'TV, Wifi & Security',konv:'Magenta 1, NEXT & procesy'};
-const PRODUCT_QUIZ=[
- {cat:'fiber',q:'Instalace T-Fiber u zákazníka bez optické zásuvky obvykle znamená:',opts:['Technik udělá tenký průvrt do bytu — standardně zdarma','Zákazník si zásuvku musí zřídit na vlastní náklady','Instalace není možná, musí se čekat na výstavbu'],ans:0,exp:'Průvrt je tenký jako tuha z propisky a standardní instalace je zdarma — silný argument proti námitce „nechci vrtání“.'},
- {cat:'fiber',q:'Kdy nabízíš zákazníkovi bezdrátový internet?',opts:['Jako první volbu vždy — má nejrychlejší instalaci','Až když FTTH technicky nejde, nebo majitel odmítl vrtání','Nikdy, není součástí portfolia'],ans:1,exp:'Bezdrátový internet je záchranná varianta, ne výchozí nabídka — vždy nejdřív prověř FTTH/FTTx/xDSL.'},
- {cat:'fiber',q:'Co potřebuješ od zákazníka pro portaci v síti Cable (bývalý Vodafone/UPC)?',opts:['Rodné číslo a číslo účtu','OKU kód vyhledaný společně na Můj Vodafone','Nic, portace proběhne automaticky'],ans:1,exp:'OKU kód se hledá společně se zákazníkem na Můj Vodafone, portace pak trvá 14 dní od verifikace.'},
- {cat:'fiber',q:'Proč se tarif xDSL Internet 20 aktivně nenabízí?',opts:['Byl zrušen','Nedává dnes dostatečný komfort — nabízí se jen tam, kde není dostupná vyšší rychlost','Je dražší než xDSL 100'],ans:1,exp:'Firemní pozice: 20 Mb/s dnes nestačí na komfortní zážitek, nabízí se jen bez lepší alternativy.'},
- {cat:'tv',q:'Zákazník řekne: „Máme Netflix, televizi neřešíme.“ Správná reakce?',opts:['Přesvědčit ho, že Netflix je horší než naše nabídka','Vysvětlit, že Magenta TV Plus se s Netflixem spojuje — nenahrazuje ho','Souhlasit a rovnou přejít na cenu'],ans:1,exp:'Balíčky Magenta TV Plus s Netflixem/HBO Max/Disney+ jsou spojení, ne náhrada — klíčová formulace pro tuhle námitku.'},
- {cat:'tv',q:'Jaká je minimální doporučená rychlost internetu pro Magenta TV?',opts:['50 Mb/s','5 Mb/s (10 Mb/s při dvou set-top boxech)','Funguje jen na T-Fiberu'],ans:1,exp:'Magenta TV lze technicky pustit na jakémkoliv internetu, doporučené minimum je 5, resp. 10 Mb/s.'},
- {cat:'tv',q:'Co NENÍ funkcí Wifi Manageru?',opts:['Časová pravidla pro připojení dětí','Sdílení hesla přes QR kód','Automatické zrychlení internetu nad rámec tarifu'],ans:2,exp:'Wifi Manager spravuje síť (pravidla, blokace, sdílení) — rychlost tarifu nezvyšuje.'},
- {cat:'tv',q:'Balíček Security je:',opts:['Příplatková služba za 99 Kč/měsíc','Součástí všech tarifů NEXT, chrání i na mobilních datech','Dostupný jen k Magenta TV Plus'],ans:1,exp:'Security je zahrnutý ve všech tarifech NEXT — dobrý argument pro zákazníky řešící bezpečnost online.'},
- {cat:'konv',q:'Kolik služeb minimálně/maximálně potřebuje zákazník pro Magenta 1?',opts:['1 až 5','2 až 9','3 až 12'],ans:1,exp:'Magenta 1 vyžaduje min. 2 a max. 9 služeb pod jedním rodným číslem.'},
- {cat:'konv',q:'Slevu v Magenta 1 čerpají:',opts:['Všechny služby bez ohledu na cenu','Jen služby, které stojí před slevou 399 Kč a více','Jen mobilní tarify'],ans:1,exp:'Sleva 10–25 % se počítá jen ze služeb nad 399 Kč před slevou.'},
- {cat:'konv',q:'Co se stane hned po podpisu smlouvy u zákazníka?',opts:['Nic, objednávka je hotová','Objednávka jde bez podepsané smlouvy do verifikace TOS backoffice, zákazníkovi zavolají','Zákazník musí sám zavolat na centrálu'],ans:1,exp:'Řekni to zákazníkovi dopředu — sníží to počet storen, když zvedne neznámé číslo.'},
- {cat:'konv',q:'K čemu slouží OKU kód?',opts:['K přenosu (portaci) telefonního čísla od jiného operátora','K aktivaci Wifi Manageru','K ověření totožnosti zákazníka'],ans:0,exp:'OKU kód (14 znaků) je bez portace nepřenositelný — bez něj proces nejde zahájit.'},
-];
-let PQ=null;
-function shuffledQuiz(){
-  const idx=[...PRODUCT_QUIZ.keys()].sort(()=>Math.random()-.5);
-  return idx.map(qi=>{
-    const src=PRODUCT_QUIZ[qi];
-    const optIdx=src.opts.map((_,i)=>i).sort(()=>Math.random()-.5);
-    return {cat:src.cat, q:src.q, exp:src.exp, opts:optIdx.map(i=>src.opts[i]), ans:optIdx.indexOf(src.ans)};
-  });
-}
-function startPQuiz(){ PQ={i:0,correct:0,cats:{},items:shuffledQuiz()}; go('pquiz'); }
-function vProductQuiz(){
-  if(!PQ) PQ={i:0,correct:0,cats:{},items:shuffledQuiz()};
-  if(PQ.i>=PQ.items.length){
-    const pct2=Math.round(PQ.correct/PQ.items.length*100);
-    S.pquizCats=PQ.cats;
-    if(!ONBOARD_MODE) skillsUpdate('Znalost Fiber',(PQ.cats.fiber&&PQ.cats.fiber.total)?Math.round(PQ.cats.fiber.correct/PQ.cats.fiber.total*100):pct2);
-    if(!ONBOARD_MODE) skillsUpdate('Magenta TV nabídka',(PQ.cats.tv&&PQ.cats.tv.total)?Math.round(PQ.cats.tv.correct/PQ.cats.tv.total*100):pct2);
-    if(!ONBOARD_MODE) skillsUpdate('Cross-sell',(PQ.cats.konv&&PQ.cats.konv.total)?Math.round(PQ.cats.konv.correct/PQ.cats.konv.total*100):pct2);
-    const rows=Object.keys(PQ_CATS).map(k=>{
-      const c=PQ.cats[k]||{correct:0,total:0};
-      return skillBar(PQ_CATS[k], c.total?Math.round(c.correct/c.total*100):0);
-    }).join('');
-    return `<div class="pad">
-      <div style="text-align:center;margin:22px 0 18px">
-        ${ring(pct2,110,9,pct2>=70?'var(--green)':'var(--amber)','PRODUKT')}
-        <h1 class="h-md fade" style="margin-top:14px">${PQ.correct}/${PQ.items.length} správně</h1>
-      </div>
-      <div class="card fade">
-        <span class="eyebrow mut">Podle ucelených celků</span>
-        <div style="margin-top:12px">${rows}</div>
-      </div>
-      <button class="btn fade d1" onclick="${ONBOARD_MODE?'finishOnboardDiag()':"addXP(30);PQ=null;go('products')"}">${ONBOARD_MODE?'Zobrazit mapu dovedností':'Hotovo · +30 XP'}</button>
-    </div>`;
-  }
-  const q=PQ.items[PQ.i];
-  return `<div class="pad">
-    ${ONBOARD_MODE?'<span class="eyebrow">Vstupní diagnostika · 2/2</span>':'<button class="backbtn" onclick="PQ=null;go(\'products\')">‹ Produktová akademie</button><span class="eyebrow">Produktový test</span>'}
-    <div class="bar" style="margin:10px 0 16px"><i style="width:${PQ.i/PQ.items.length*100}%"></i></div>
-    <span class="chip mag" style="margin-bottom:10px;display:inline-block">${PQ_CATS[q.cat]}</span>
-    <div class="card hot"><p style="font-size:14px;font-weight:600;line-height:1.5">${q.q}</p></div>
-    <div id="pqFb"></div>
-    ${q.opts.map((o,i)=>`<button class="choice" onclick="pqAnswer(${i})">${o}</button>`).join('')}
-  </div>`;
-}
-function pqAnswer(i){
-  if($('pqFb').innerHTML) return;
-  const q=PQ.items[PQ.i]; const ok=i===q.ans;
-  if(!PQ.cats[q.cat]) PQ.cats[q.cat]={correct:0,total:0};
-  PQ.cats[q.cat].total++;
-  if(ok){ PQ.correct++; PQ.cats[q.cat].correct++; }
-  $('pqFb').innerHTML=`<p style="font-size:12.5px;line-height:1.55;margin-bottom:10px;color:var(--${ok?'green':'red'})">${ok?'✓ Správně':'✗ Správně: '+q.opts[q.ans]} — ${q.exp}</p>`;
-  setTimeout(()=>{PQ.i++;render();},1700);
-}
-function finishOnboardDiag(){
-  computeSkillsFromDiagnostic();
-  S.onboardStage='done'; stSaveSoon();
-  addXP(20);
-  PQ=null; go('skillmap');
-}
-function computeSkillsFromDiagnostic(){
-  const d=S.diagRP||{phase:0,scores:[],first:{},success:false};
-  const avgSc=d.scores.length?d.scores.reduce((a,b)=>a+b,0)/d.scores.length:1;
-  const pq=S.pquizCats||{};
-  const catPct=k=>{ const c=pq[k]; return (c&&c.total)?Math.round(c.correct/c.total*100):60; };
-  const cl=v=>Math.max(8,Math.min(97,Math.round(v)));
-  const f=d.first||{};
-  const difBonus=((d.dif||1)-1)*10;
-  S.skills=[
-    ['Připravenost do terénu', cl(45+(f.pass?25:0)+avgSc*8)],
-    ['První dojem', cl(35+(f.ident?25:0)+((f.legit||f.hook)?20:0))],
-    ['Otvírák rozhovoru', cl(28+d.phase*13+difBonus)],
-    ['Vstup za dveře', cl(18+Math.max(0,d.phase-1)*18+difBonus)],
-    ['Zjišťování potřeb', cl(18+Math.max(0,d.phase-2)*22+difBonus)],
-    ['Znalost Fiber', cl(catPct('fiber'))],
-    ['Magenta TV nabídka', cl(catPct('tv'))],
-    ['Práce s námitkami', cl(22+avgSc*35)],
-    ['Uzavírání', cl(d.success?70+avgSc*10:22+d.phase*8+difBonus)],
-    ['Cross-sell', cl(catPct('konv'))],
-  ];
 }
 
 /* ================= SELL ================= */
@@ -1763,25 +1484,6 @@ function heurScore(tx,keys){
    V tomto demu běží všechna volání na Sonnet 4.6 (pravidlo prostředí artefaktů). */
 const MODEL_TIERS={drill_eval:'claude-sonnet-4-6',customer:'claude-sonnet-4-6',deep_coach:'claude-sonnet-4-6'};
 const PROD_MODEL_TIERS={drill_eval:'claude-haiku-4-5',customer:'claude-sonnet-4-6',deep_coach:'claude-fable-5'};
-
-/* ================= AGENT CORE — konfigurace prodejního agenta =================
-   Zdroj: znalostní databáze produktů + kostra prodejního rozhovoru (5 kroků prodeje),
-   inspirováno SPIN Selling / Challenger Sale / Sandler / Cialdini. Vlastní skórovací
-   logika enginu (VR.scores, fáze Kontakt→Zaujetí→Analýza→Hodnota→Krok) je zjednodušený
-   heuristický proxy pro oficiální 4krokový/16bodový hodnoticí formulář TOS (viz
-   docs/kostra-prodejniho-rozhovoru-5-kroku.md, sekce 8) — NENÍ s ním 1:1 mapovaná.
-   Toto je ZÁVAZNÁ konfigurace — vkládá se do všech AI promptů (customer i coach). */
-const AGENT_RULES = `
-DOPLŇKOVÁ PRAVIDLA METODIKY (potvrzeno trenérem, vylepšeno deep-research validací — závazné):
-- PERMISSION-LINE: pokud prodejce dá zákazníkovi otevřeně možnost kdykoliv odmítnout ("kdykoliv řekněte, že vás to nezajímá, a přestanu"), je to silný signál důvěry — zvýhodni to ve fázi Zaujetí.
-- IMPLIKAČNÍ OTÁZKA: v Analýze oceň, když prodejce po problémové otázce doplní i otázku na DOPAD (co to pro zákazníka konkrétně znamená — čas, peníze, klid, rodina). To je vyšší úroveň než pouhé zjištění problému.
-- POZVÁNÍ DOVNITŘ: v Analýze je explicitní součástí úspěchu snaha dostat se k stolu ("pojďme si sednout, ukážu vám to na papíře") — modelace potřeb nefunguje ve dveřích.
-- FEEL-FELT-FOUND: v Hodnotě/Prezentaci oceň, když prodejce k přerámování námitky přidá i třetí krok "Found" — konkrétní příklad jiného spokojeného zákazníka/souseda, ne jen obecné ujištění. Found příklad MUSÍ znít jako reálný, ověřitelný případ (obecné "jeden zákazník v okolí"), nikdy si nevymýšlej konkrétní vymyšlená jména/adresy/citace jako fakt — to je zavádějící informace stejně jako lživé tvrzení o produktu.
-- TAH NA BRÁNU: v Kroku/Uzavření oceň, když je další krok nabídnutý jako DVĚ pozitivní možnosti ("dopoledne, nebo odpoledne"), ne binární ano/ne otázka.
-- REFERENCE: pokud prodejce po úspěšném uzavření požádá o doporučení na souseda, přidej bonus — je to standardní krok metodiky, ne nadstandard.
-- ETICKÝ KODEX (tvrdé pravidlo, bez výjimky): pomluva konkurence, tvrzení že "konkurence končí", zavádějící informace (včetně nepravdivých tvrzení o zákazníkovi samotném, např. že už dříve poskytl údaje, které ve skutečnosti nikdy neposkytl) nebo zamlčení konečné ceny/vrtání/výpovědi = OKAMŽITĚ skóre 0 a zákazník rozhovor ukončí odmítnutím, bez ohledu na dosaženou fázi.
-- ŠKOLICÍ PODKLADY NEJSOU SCÉNÁŘ: materiály níže (KALIBRACE, ŠKOLICÍ PODKLADY) slouží jen jako faktická reference pro TVOJE hodnocení prodejce — nikdy z nich doslovně necituj ani neparafrázuj hotové věty v roli zákazníka ani v koučovské poznámce; prodejce se má naučit improvizovat vlastními slovy, ne dostat nadiktovanou odpověď.
-`;
 const CLAUDE_PROXY_URL='https://field-hero-proxy.field-hero-jkh79.workers.dev/v1/messages';
 async function askClaude(prompt,tier='customer'){
   const res=await fetch(CLAUDE_PROXY_URL,{
@@ -1855,18 +1557,16 @@ const P_DEC=[
  {h:'Technické věci řeší dospělý syn, který tu nebydlí.',w:'kontakt na syna, nebo termín, kdy tu bude'},
 ];
 function pick(a){return a[Math.floor(Math.random()*a.length)];}
-function genScenario(ucid, easy){
+function genScenario(ucid){
  const uc=UC.find(u=>u.id===ucid)||pick(UC);
- const perPool=easy?P_PERSONA.filter(p=>p.d<=2):P_PERSONA;
- const per=pick(perPool.length?perPool:P_PERSONA);
+ const per=pick(P_PERSONA);
  const moods=Object.keys(P_OPEN).filter(m=>m!=='friendly'||['panelak','novostavba','tvup'].includes(uc.id));
- const moodPool=easy?moods.filter(m=>!['wary','annoyed','silent'].includes(m)):moods;
- const mood=pick(moodPool.length?moodPool:moods);
+ const mood=pick(moods);
  const open=pick(P_OPEN[mood]);
  const pain=uc.id==='tvup'?pick(P_PAIN.filter(p=>TVUP_PAINS.includes(p.id))):pick(P_PAIN);
  const prov=uc.id==='tvup'?'pevný internet od T-Mobile (stávající zákazník)':pick(P_PROV);
  const dec=pick(P_DEC);
- const dif=Math.max(1,Math.min(easy?2:4,per.d+(MOOD_D[mood]||0)));
+ const dif=Math.max(1,Math.min(4,per.d+(MOOD_D[mood]||0)));
  const extra={navrat:' Před měsícem tu byl kolega — zákazník si to pamatuje a je citlivý na opakované návštěvy.',senior:' V lokalitě dřív chodili falešní podomní prodejci — bez průkazu a legitimity nikdo nemluví.',novostavba:' V bytě je předpřipravená optická zásuvka od developera — zákazník o ní často neví.'}[uc.id]||'';
  return {ucid:uc.id,seg:uc.n,segd:uc.d,name:per.n,emoji:per.e,dif,mood,
   vis:pick(P_BUILD[uc.id])+', '+pick(P_TIME)+'. '+per.v+' '+MOOD_VIS[mood],
@@ -1884,19 +1584,19 @@ function vRpSetup(){
   if(!VR_SCEN||VR_SCEN.ucid!==S.ucSel) VR_SCEN=genScenario(S.ucSel);
   const sup=speechSupported(); const c=VR_SCEN;
   return `<div class="pad">
-    ${ONBOARD_MODE?'':'<button class="backbtn" onclick="go(\'learn\')">‹ Zpět</button>'}
-    <span class="eyebrow">${ONBOARD_MODE?'Vstupní diagnostika · kompletní rozhovor':'AI role-play · kompletní rozhovor'}</span>
-    <h1 class="h-lg" style="margin:8px 0 12px">${ONBOARD_MODE?'Nejdřív si to zahrajeme':'Trénink u dveří'}</h1>
-    ${ONBOARD_MODE?'<p class="sub" style="margin-bottom:14px">Žádné izolované otázky — rovnou celý rozhovor od zazvonění po dveře, přesně jako v terénu. Podle toho, jak daleko se dostaneš, ti pak app postaví osobní plán.</p>':`<div class="chiprow" style="margin-bottom:14px">
+    <button class="backbtn" onclick="go('learn')">‹ Zpět</button>
+    <span class="eyebrow">AI role-play · kompletní rozhovor</span>
+    <h1 class="h-lg" style="margin:8px 0 12px">Trénink u dveří</h1>
+    <div class="chiprow" style="margin-bottom:14px">
       ${UC.map(u=>`<button class="chip ${S.ucSel===u.id?'mag':''}" style="cursor:pointer;border:none" onclick="setUc('${u.id}')">${u.n}</button>`).join('')}
-    </div>`}
+    </div>
     <div class="card fade">
       <div class="row between" style="margin-bottom:10px">
         <div class="row" style="gap:10px">
           <div class="avatar sm" style="background:linear-gradient(135deg,#3A3644,#221F2A)">${c.emoji}</div>
           <div><div class="h-sm" style="font-size:13px">${c.name}</div><div class="tiny">${c.seg} · obtížnost ${c.dif}/4</div></div>
         </div>
-        ${ONBOARD_MODE?'':'<button class="ttsbtn" onclick="newScenario()">🎲 nový scénář</button>'}
+        <button class="ttsbtn" onclick="newScenario()">🎲 nový scénář</button>
       </div>
       <span class="eyebrow mut">Co vidíš a slyšíš</span>
       <p style="font-size:12.5px;line-height:1.55;margin:6px 0 12px;color:var(--muted)">${c.vis}</p>
@@ -2057,33 +1757,22 @@ function offlineStep(tx){
     ident:/(jmenuji se|mé jméno|jsem [a-zžený ]{0,20}z |t.?mobile osobně|t.?mobile|průkaz|novák|zástupce)/.test(t),
     legit:/(oznámení|správc|vchod|ulic| dům |domě|dohod|soused|nárok|výhod|zásuvk|develop|kolega|nástěnk|akci v tomto)/.test(t),
     hook:/(jedna věc|vteřin|nezdržím|chvilku|krátce|zaujm|netuší|zajímav|efektivní)/.test(t),
-    permission:/(kdykoliv|kdykoli).{0,30}(řekněte|řekni|zastavte|nebudu (vás |tě )?zdržovat|dávat smysl)/.test(t),
     q:/(jaké připojení|jaký internet|kolik zařízení|co vás|co doma|jak funguje|jak zvládá|vyhovuje vám|spokojen[íý] s|jak jste|kdo u vás|co používáte|k čemu.{0,15}využ|jaké máte zkušenost)/.test(t),
-    qCount:(t.match(/jaké připojení|jaký internet|kolik zařízení|co vás|co doma|jak funguje|jak zvládá|vyhovuje vám|spokojen[íý] s|jak jste|kdo u vás|co používáte|k čemu.{0,15}využ|jaké máte zkušenost/g)||[]).length,
     emp:/(chápu|rozumím|oceňuji|to je fér|omlouvám|mrzí|naprosto|perfektní|výborně)/.test(t),
     value:/(optik|symetr|upload|výpad|zpětn|wifi manager|magenta|stabil|kapacit|faktu|sleva|neomezen|vlastní kapacit|rozdíl|řeší|vlákno|rychlej|spolehliv|nebude sekat|neseká|kvalit)/.test(t),
-    step:/(posadit|posaďme|posad|termín|zítra|schůzk|magnetov|srovnám|srovnat|ukážu|ukázat|zavolá|hodí|pojďme|pět minut|na papíře|stavím se|domluvíme|domluvit|kdy vám|kdy se|víkend|dopoledne|odpoledne|tento týden|příští týden)/.test(t),
-    twoOption:/(dopoledne|odpoledne|tento týden|příští týden).{0,25}nebo.{0,25}(dopoledne|odpoledne|tento týden|příští týden)/.test(t),
+    step:/(posadit|posaďme|posad|termín|zítra|schůzk|magnetov|srovnám|srovnat|ukážu|ukázat|zavolá|hodí|pojďme|pět minut|na papíře|stavím se|domluvíme|domluvit|kdy vám|kdy se|víkend)/.test(t),
     pitch:/^ ?(akce|sleva|nabídk|máme akci|299|za polovinu|nejlevnější|berete|nezajímalo)/.test(t.trim())||/nezajímalo by vás/.test(t),
-    badmouth:/(konkurence.{0,15}(končí|skončí|zkrachuje|je špatn)|o2.{0,12}(okrád|lž|špatn|podvád)|vodafone.{0,12}(okrád|lž|špatn|podvád)|upc.{0,12}(okrád|lž|špatn|podvád)|jsou (podvodníci|zloději|lháři)|okrádají vás|lžou vám|přebíráme.{0,10}zákazník)/.test(t),
   };
-  // ETICKÝ KODEX — tvrdé pravidlo, kontroluje se před vším ostatním (viz AGENT_RULES)
-  if(has.badmouth){
-    return {reply:'*zvážní* Takhle o jiných firmách prosím nemluvte. Díky, nemám zájem. *zavírá dveře*',
-      sc:0,phase:VR.phase,end:true,success:false,
-      note:'Porušení etického kodexu — pomluva konkurence. Automatické nejnižší hodnocení bez ohledu na fázi.'};
-  }
   // kaskádový postup: v jedné replice může prodejce naplnit víc fází najednou
   let p=VR.phase, adv=0;
   const before=p;
   if(p===0 && has.ident){ p=1; }
-  if(p===1 && (has.legit||has.hook||has.emp||has.permission)){ p=2; }
-  if(p===2 && has.q){ VR.qCount=(VR.qCount||0)+Math.max(1,has.qCount); if(VR.qCount>=2) p=3; }
+  if(p===1 && (has.legit||has.hook||has.emp)){ p=2; }
+  if(p===2 && has.q){ p=3; }
   if(p===3 && has.value){ p=4; }
   if(p===4 && has.step){ p=5; }
   adv=p-before;
-  const goodQ=(before===2 && p===2 && has.q);
-  const sc=adv>=2?2:(adv===1?1:(goodQ?1:0));
+  const sc=adv>=2?2:(adv===1?1:0);
   let reply,end=false,success=false;
   if(VR.turn===1 && has.pitch && ['wary','annoyed','rushed','silent'].includes(c.mood)){
     reply='Nemám zájem. *zavírá dveře*'; end=true;
@@ -2098,8 +1787,6 @@ function offlineStep(tx){
     VR.painShown=true; reply=c.painReveal;
   } else if(p===3){
     reply='No dobře, ptáte se správně. Ale k čemu tím míříte?';
-  } else if(goodQ){
-    reply='No, celkem to používáme — hlavně večer. Ale chcete vědět ještě něco?';
   } else if(p===2){
     reply='*pokrčí rameny* No… něco tu máme, funguje to nějak. Tak co potřebujete?';
   } else if(p===1){
@@ -2108,10 +1795,9 @@ function offlineStep(tx){
     reply='Aha. A co teda po mně chcete?';
   }
   if(!end && VR.turn>=8){ end=true; success=p>=5; if(!success) reply='Hele, už fakt musím. Nashle. *zavírá*'; }
-  VR._stall=(adv===0 && !goodQ)?(VR._stall||0)+1:0; if(VR._stall>=2 && VR.turn>2 && c.dif>=3 && !end && p<4){ reply='*ztrácí trpělivost* Tohle nikam nevede. Nashle. *zavírá*'; end=true; }
+  VR._stall=(adv===0)?(VR._stall||0)+1:0; if(VR._stall>=2 && VR.turn>2 && c.dif>=3 && !end && p<4){ reply='*ztrácí trpělivost* Tohle nikam nevede. Nashle. *zavírá*'; end=true; }
   const notes=['Chybí posun — zákazník pořád neví, kdo jsi, proč tu jsi, nebo co po něm chceš. Vrať se ke struktuře fází.','Dobrý posun o fázi. Drž linku: kontakt → zaujetí → analýza → hodnota → krok.','Výborně — posunul jsi rozhovor o dvě fáze najednou. Přesně tohle dělá špičkový obchodník.'];
-  const note = goodQ ? 'Dobrá otázka. Metodika žádá víc než jednu — polož ještě jednu z jiné kategorie (informativní/problémová/na přání), než přejdeš k hodnotě.' : notes[sc];
-  return {reply,sc,phase:p,end,success,note};
+  return {reply,sc,phase:p,end,success,note:notes[sc]};
 }
 async function vrProcess(tx,dur){
   const met=dur>0?speechMetrics(tx,dur):null;
@@ -2135,7 +1821,7 @@ PODMÍNKA ÚSPĚCHU PRODEJCE: ${c.win}
 FÁZE ROZHOVORU (prodejce si každou musí ZASLOUŽIT, nic nepřeskakuj):
 1 Kontakt — představil se jménem a firmou (T-Mobile Osobně), ideálně průkaz
 2 Zaujetí — legitimita (proč tu je) nebo zvědavost; PRVNÍCH 10 VTEŘIN: pokud první replika je produktový pitch nebo cena, reaguj odmítavě, při náladě wary/annoyed/rushed rovnou zavři dveře
-3 Analýza — položil ALESPOŇ DVĚ smysluplné zjišťovací otázky (informativní/problémovou/na přání); jedna dobrá otázka nestačí k postupu, jen k částečné pochvale. Teprve PO druhé dobré otázce smíš po částech přiznat skrytou bolest
+3 Analýza — položil smysluplnou zjišťovací otázku (informativní/problémovou/na přání); teprve PO dobré otázce smíš po částech přiznat skrytou bolest
 4 Hodnota — propojil TVOJI konkrétní bolest s konkrétním řešením (ne obecné fráze)
 5 Krok — zajistil konkrétní další krok odpovídající podmínce úspěchu
 
@@ -2145,7 +1831,7 @@ PRAVIDLA REALISMU:
 - ETICKÝ KODEX = tvrdá pravidla: pomluva konkurence, „konkurence končí“, zavádějící informace, zamlčení konečné ceny/vrtání → skore 0 a odmítavá reakce.
 - Odpovídej 1–2 větami hovorovou češtinou, scénické poznámky v *hvězdičkách*.
 - Max 8 výměn. Buď náročný, ale férový — kdo pracuje správně, postupuje.
-${AGENT_RULES}
+
 ${buildCalibration(c)}${buildMaterials()}
 Dosavadní rozhovor:
 ${hist}
@@ -2204,20 +1890,11 @@ function vVoiceRpResult(){
   const fills=VR.mets.reduce((a,m)=>a+m.fillers,0);
   let worst=null,minS=99; VR.chat.filter(m=>m.r==='me'&&m.note).forEach((m,i)=>{ const sc=(VR.scores[i]!==undefined)?VR.scores[i]:2; if(sc<minS){minS=sc;worst=m.note;} });
   const f=VR.first||{};
-  const weakOnboard = ONBOARD_MODE && !ONBOARD_RETRIED && !VR.success;
-  if(ONBOARD_MODE && !S.diagRP && !weakOnboard){ S.diagRP={phase:VR.phase,scores:VR.scores.slice(),first:f,success:VR.success,turn:VR.turn,dif:VR.c.dif}; S.onboardStage='quiz'; stSaveSoon(); addXP(20); }
-  const delta = (ONBOARD_MODE && ONBOARD_RETRIED && ONBOARD_ATTEMPT1) ? (VR.phase-ONBOARD_ATTEMPT1.phase) : null;
   return `<div class="pad">
-    ${ONBOARD_MODE?(weakOnboard
-      ?'<span class="eyebrow">Vstupní diagnostika · první pokus</span><h1 class="h-md" style="margin:6px 0 2px">Náročný zákazník, co?</h1><p class="tiny" style="margin-bottom:10px">To se v terénu běžně stává. Podívej se, kde to zaseklo, a zkus stejného zákazníka ještě jednou.</p>'
-      :(ONBOARD_RETRIED?`<span class="eyebrow">Vstupní diagnostika · 1/2 hotovo</span><h1 class="h-md" style="margin:6px 0 2px">${delta>0?'Lepší! 📈':'Rozhovor máš za sebou'}</h1><p class="tiny" style="margin-bottom:10px">${delta>0?`Posunul ses o ${delta} ${delta===1?'fázi':'fáze'} oproti prvnímu pokusu. `:''}Teď ještě krátký produktový test a uvidíš celou mapu dovedností.</p>`
-      :'<span class="eyebrow">Vstupní diagnostika · 1/2 hotovo</span><h1 class="h-md" style="margin:6px 0 2px">Rozhovor máš za sebou</h1><p class="tiny" style="margin-bottom:10px">Teď ještě krátký produktový test a uvidíš celou mapu dovedností.</p>'))
-      :''}
     <div style="text-align:center;margin:18px 0 16px">
       ${ring(s,110,9,passed?'var(--green)':'var(--amber)','SKÓRE')}
       <h1 class="h-md fade" style="margin-top:14px">${passed?'Dotáhl jsi to do konce! 🎉':'Rozhovor skončil ve fázi '+VR.phase+'/5'}</h1>
       <p class="sub fade d1" style="margin-top:6px">${VR.c.name} · ${VR.c.seg} · obtížnost ${VR.c.dif}/4 ${VR.offline?'· offline režim':''}</p>
-      ${VR.offline?'<p class="tiny" style="text-align:center;margin-top:4px;color:var(--muted)">⚠️ Offline režim kontroluje jen pomluvu konkurence — úplnost informace o ceně/vrtání/výpovědi se ověří až při připojení k AI.</p>':''}
     </div>
     <div class="card fade">
       <span class="eyebrow mut">Fázový průběh rozhovoru</span>
@@ -2259,14 +1936,11 @@ function vVoiceRpResult(){
       <textarea class="fallback" id="sessTxt" style="min-height:52px" placeholder="Poznámka: co má model dělat jinak? (volitelné)"></textarea>
       <button class="btn mini" style="margin-top:8px;background:var(--amber);color:#2a1c00" onclick="sessSave()">Uložit hodnocení simulace</button>
     </div>`:''}
-    ${(ONBOARD_MODE||weakOnboard)?'':`<div class="row" style="gap:10px;margin-bottom:10px">
+    <div class="row" style="gap:10px;margin-bottom:10px">
       <button class="btn ghost" onclick="newScenario();startVoiceRp()">🎲 Nový zákazník</button>
       <button class="btn ghost" onclick="startVoiceRp()">↻ Stejný znovu</button>
-    </div>`}
-    ${weakOnboard
-      ? `<button class="btn" onclick="ONBOARD_RETRIED=true;ONBOARD_ATTEMPT1={phase:${VR.phase},success:${VR.success}};VR=null;startVoiceRp()">🔁 Zkusit to samé znovu</button>
-         <button class="btn ghost" style="margin-top:10px" onclick="S.diagRP=S.diagRP||{phase:${VR.phase},scores:${JSON.stringify(VR.scores)},first:${JSON.stringify(f)},success:${VR.success},turn:${VR.turn},dif:${VR.c.dif}};S.onboardStage='quiz';stSaveSoon();addXP(10);VR=null;go('pquiz')">Pokračovat i tak ›</button>`
-      : `<button class="btn" onclick="${ONBOARD_MODE?"VR=null;go('pquiz')":(passed?'addXP(40);':'')+"VR=null;const _t=S.trainerMode;S.trainerMode=false;go(_t?'aitrain':'"+(RP_FROM_MISSION?'mission':'learn')+"')"}">${ONBOARD_MODE?'Pokračovat na produktový test ›':(passed?'Pokračovat · +40 XP':(S.trainerMode?'Zpět na AI Trénink':'Zpět na učení'))}</button>`}
+    </div>
+    <button class="btn" onclick="${passed?'addXP(40);':''}VR=null;const _t=S.trainerMode;S.trainerMode=false;go(_t?'aitrain':'${RP_FROM_MISSION?'mission':'learn'}')">${passed?'Pokračovat · +40 XP':(S.trainerMode?'Zpět na AI Trénink':'Zpět na učení')}</button>
   </div>`;
 }
 /* ================= KNIHOVNA NÁMITEK ================= */
@@ -2274,8 +1948,8 @@ const OBJ_LIB=[
  {o:'Jsem spokojený se svým poskytovatelem.',ctx:'Cihlový dům, sobota 10:30. Muž ~50 v zahradním oblečení, klidný, nikam nespěchá.',c:'Loajalita',a:'Věrný zákazník',keys:['oceňuji','věrnost','výhody','jaké'],tips:['„To je fajn slyšet, spokojenost je základ. Co u nich nejvíc oceňujete — cenu, rychlost, nebo servis?“','„Rád to slyším. Jen ze zvědavosti — kdy jste naposledy porovnával, co za ty peníze reálně dostáváte?“']},
  {o:'Nemám čas, spěchám.',ctx:'Novostavba, všední den 17:50. Žena ~35 v kostýmku, klíče od auta v ruce, už je na odchodu.',c:'Čas',a:'Zaneprázdněný profesionál',keys:['vteřin','20','krátce','jedna věc'],tips:['„Jasně, žádný problém. Nechám vám vizitku a napíšu na ni jednu věc, co se týká vašeho domu — kdy se vám líp ozvu, večer nebo ráno?“','„Chápu, běžíte. Jen rychle — máte doma optiku, nebo pořád starou linku?“','„Rozumím, teď ne. Kdy vás dneska nebo zítra nejmíň vyrušit na pár minut?“']},
  {o:'Pošlete mi to e-mailem.',ctx:'Kancelářský typ ~40, dveře otevírá jen napůl, zdvořilý úsměv. Stihl jsi mu krátce představit optiku a zmínit rychlost/stabilitu — teď hledá slušný způsob, jak rozhovor ukončit.',c:'Únik',a:'„Pošlete e-mail“',keys:['rychlost','televiz','čtvrtek','pátek','ozvu'],tips:['„Jasně, pošlu. Abych vám neposílal desetistránkový PDF — zajímá vás spíš internet, nebo i televize?“','„Rád — a rovnou se zeptám, ať to není naprázdno: je u vás teď spíš problém s rychlostí, nebo s cenou?“']},
- {o:'Kolik to stojí? … To je moc drahé.',ctx:'Panelák, muž ~45. Na cenu se zeptal dřív, než jsi dořekl pozdrav.',c:'Cena',a:'Lovec cen',keys:['oceňuji','rozpočt','srovn','kolik platíte'],tips:['„Rozumím, cena hraje roli vždycky. Kolik teď platíte a za co konkrétně? Ať vím, jestli vás vůbec můžu posunout k lepšímu.“','„Chápu. Než řeknu číslo — zajímá vás spíš nejlevnější varianta, nebo nejlepší poměr cena/výkon?“','„Jasně, k ceně se dostaneme. Napřed ale — co vám na současném připojení nejvíc vadí, nebo je spokojenost 100%?“','„Rozumím té obezřetnosti k ceně. Podobnou obavu měl minulý týden soused ve třetím patře — dneska mi psal, kolik reálně ušetřil, když si to spočítal na papíře.“']},
- {o:'Musím se poradit s manželkou.',ctx:'Rodinný dům, večer. Muž ~55, váhavý, během řeči se ohlíží do domu.',c:'Rozhodování',a:'Decision influencer',keys:['oceňuji','doma','zavolat','kdy','zítra','čtvrtek'],tips:['„To je správně. Je doma? Klidně počkám, nebo se zeptám rovnou obou — zabere to pět minut.“','„Rozumím, velké rozhodnutí ať padne spolu. Co byste jí řekl, že tu dnes bylo za nabídku? Pomůžu vám to shrnout na papír.“','„Chápu. Kdy budete oba doma, abych se mohl stavit a probrat to s vámi společně — zítra večer, nebo raději ve čtvrtek?“']},
+ {o:'Kolik to stojí? … To je moc drahé.',ctx:'Panelák, muž ~45. Na cenu se zeptal dřív, než jsi dořekl pozdrav.',c:'Cena',a:'Lovec cen',keys:['oceňuji','rozpočt','srovn','kolik platíte'],tips:['„Rozumím, cena hraje roli vždycky. Kolik teď platíte a za co konkrétně? Ať vím, jestli vás vůbec můžu posunout k lepšímu.“','„Chápu. Než řeknu číslo — zajímá vás spíš nejlevnější varianta, nebo nejlepší poměr cena/výkon?“','„Jasně, k ceně se dostaneme. Napřed ale — co vám na současném připojení nejvíc vadí, nebo je spokojenost 100%?“']},
+ {o:'Musím se poradit s manželkou.',ctx:'Rodinný dům, večer. Muž ~55, váhavý, během řeči se ohlíží do domu.',c:'Rozhodování',a:'Decision influencer',keys:['oceňuji','doma','zavolat','kdy'],tips:['„To je správně. Je doma? Klidně počkám, nebo se zeptám rovnou obou — zabere to pět minut.“','„Rozumím, velké rozhodnutí ať padne spolu. Co byste jí řekl, že tu dnes bylo za nabídku? Pomůžu vám to shrnout na papír.“','„Chápu. Kdy budete oba doma, abych se mohl stavit a probrat to s vámi společně?“']},
  {o:'Už jste tu byli minulý měsíc.',ctx:'Panelák, na dveřích cedulka „Nevhazovat letáky“. Podrážděný tón od první vteřiny.',c:'Nedůvěra',a:'Skeptik',keys:['omlouvám','nová','změnil','od té doby'],tips:['„Rozumím, že vás to štve. Nebudu se opakovat — řeknu vám jen, co se změnilo, a jestli to nedává smysl, jdu dál.“','„Chápu tu nedůvěru. Dám vám kontakt na sebe, ať příště víte, s kým mluvíte, a klidně mě sám odmítnete, když nebude co řešit.“']},
  {o:'Internet skoro nepoužívám.',ctx:'Starší dům, paní ~70, brýle na řetízku, přívětivá, ale opatrná.',c:'Potřeba',a:'Senior',keys:['telefon','vnouča','video','kdo k vám'],tips:['„To je v pořádku, spoustě lidí stačí málo. Voláte si někdy přes telefon s rodinou na video? To bývá ten hlavní důvod, proč to lidé řeší.“','„Rozumím. A televizi sledujete? I na tu se dnes připojení hodí, ať neskáče obraz.“','„Chápu, není potřeba nic složitého. Spíš se ptám, jestli vám doma všechno funguje spolehlivě, i když nejste online typ.“']},
  {o:'Mám smlouvu a pokutu za odchod.',ctx:'Bytovka, muž ~35, věcný, mluví rychle — tohle už evidentně řešil.',c:'Závazek',a:'Věrný zákazník',keys:['rodné číslo','ičo','modem','odpustíme','kdy končí'],tips:['„Jasně, to řešíme často. Kdy vám smlouva reálně končí? Můžeme se sejít těsně před tím termínem, ať vás to nic nestojí.“','„Rozumím. Co přesně by vás ta pokuta stála? Někdy se vyplatí přejít i s ní, jindy počkáme — spočítejme si to spolu.“','„Chápu, závazek je závazek. Dosplácíte ho v klidu a my mezitím připravíme, co budete mít u nás — ať máte čas na rozmyšlenou.“']},
@@ -2287,30 +1961,20 @@ const OBJ_LIB=[
  {o:'Televizi neřeším, máme Netflix.',ctx:'Mladý pár ~30, v pozadí velká TV s pauznutým seriálem.',c:'TV',a:'TV nadšenec',keys:['balíč','zpětné','sport','nenahrazuje'],tips:['„Super, Netflix je základ. My ho navíc rovnou spojujeme do jedné faktury s HBO Max nebo Disney+ — sledujete i něco z toho?“','„To je v pohodě, Netflix vám nebereme. Řešíte ale někdy sport nebo živé zprávy, co na Netflixu nejsou?“','„Jasně, chápu. Věděli jste, že si Netflix můžete propojit s naší nabídkou a mít i zpětné přehrávání seriálů, co vám ujely?“']},
  {o:'Bydlím v nájmu, nemůžu nic měnit.',ctx:'Studentka ~25, na zvonku jiné příjmení, nejistá, jestli vůbec může rozhodovat.',c:'Praktická',a:'Manažer domácnosti',keys:['bez zásahu','zásuvk','majitel','souhlas'],tips:['„Rozumím, u nájmu je to citlivé. Chcete, ať vám napíšu, co přesně by majitel musel odsouhlasit? Většinou je to formalita.“','„Chápu. Než něco řešíme s majitelem — zajímalo by vás to vůbec, kdyby šlo bez starostí?“']},
  {o:'Konkurence mi nabídla levnější tarif.',ctx:'Muž ~35, v ruce drží leták konkurence a poklepává na cenu.',c:'Konkurence',a:'Lovec cen',keys:['co obsahuje','rychlost','záruk','srovnat'],tips:['„Klidně mi ukažte, co tam mají napsané. Srovnáme si to bod po bodu — rychlost, cenu po akci, i to, co se stane při výpadku.“','„Může to být fér nabídka. Zajímá vás jen cena, nebo i to, jak rychle vám to opraví, když něco nefunguje?“','„Rozumím, cena je lákavá. Podívejme se ale, co je v ceně skutečně zahrnuté — někdy se to na papíře jen tak tváří levněji.“']},
- {o:'Nechci žádné vrtání a dráty.',ctx:'Čerstvě zrekonstruovaný byt, paní ~50 se ohlíží na nově vymalovanou chodbu.',c:'Instalace',a:'Manažer domácnosti',keys:['tuha','propisky','uklidí','technici','rozumím'],tips:['„Chápu, po rekonstrukci bych taky nechtěl žádné škody. Vrtá se jeden malý otvor, tenký jako propiska, a technici po sobě vždy uklidí.“','„Rozumím tu obavu. Můžu vám ukázat přesně, kudy se kabel vede, ať víte dopředu, že se to nedotkne čerstvé malby.“','„Naprosto chápu. Instalace trvá pár minut a je min. zásah — chcete, ať vám technik napřed ukáže, kde přesně by vrtal?“','„Podobnou obavu měla minulý týden paní ve vedlejším vchodě, taky po rekonstrukci — dneska mi psala, že si po instalaci ani nevšimla, že se vůbec něco vrtalo.“']},
+ {o:'Nechci žádné vrtání a dráty.',ctx:'Čerstvě zrekonstruovaný byt, paní ~50 se ohlíží na nově vymalovanou chodbu.',c:'Instalace',a:'Manažer domácnosti',keys:['tuha','propisky','uklidí','technici','rozumím'],tips:['„Chápu, po rekonstrukci bych taky nechtěl žádné škody. Vrtá se jeden malý otvor, tenký jako propiska, a technici po sobě vždy uklidí.“','„Rozumím tu obavu. Můžu vám ukázat přesně, kudy se kabel vede, ať víte dopředu, že se to nedotkne čerstvé malby.“','„Naprosto chápu. Instalace trvá pár minut a je min. zásah — chcete, ať vám technik napřed ukáže, kde přesně by vrtal?“']},
  {o:'Wi-Fi mi doma stejně nefunguje, to nevyřešíte.',ctx:'Muž ~30 v mikině, za ním na botníku bliká router zapadaný botami.',c:'Technika',a:'Technický expert',keys:['router','wi-fi','pokrytí','rozdíl'],tips:['„Vidím ho tamhle pod botami — to samo o sobě signál dost sráží. Kde všude doma potřebujete, aby to chytalo?“','„To se řeší dost často a obvykle to není chyba operátora, ale umístění routeru. Chcete, ať se na to podíváme spolu?“','„Rozumím té frustraci. My navíc řešíme i pokrytí uvnitř bytu, ne jen přívod — kde to nejvíc zlobí?“']},
  {o:'Jsem starší, tolik toho nepotřebuju.',ctx:'Pán ~75 s naslouchátkem, mluví pomalu, přívětivý — ale rozhovor rád ukončí.',c:'Potřeba',a:'Senior',keys:['jednoduch','pomůže','rodina','volání'],tips:['„Rozumím, není potřeba nic složitého. Voláte si s rodinou přes telefon nebo tablet? To bývá to hlavní, kvůli čemu to lidé řeší.“','„Chápu. Klidně vám ukážu jen tu nejjednodušší variantu — bez ničeho navíc, co byste nevyužil.“','„To je v pořádku. Jen se zeptám — funguje vám teď doma všechno spolehlivě, i to jednoduché?“']},
- {o:'Musím si to rozmyslet.',ctx:'Muž ~45, celou dobu přikyvoval, u podpisu couvá. Není proti — jen se bojí rozhodnout.',c:'Rozhodování',a:'Nerozhodný',keys:['perfektní','oceňuji','co konkrétně','promyslet','kdy vám','zítra','čtvrtek'],tips:['„Jasně, rozmyslete si to. Jen mi řekněte, co konkrétně váhá — ať vám to příště rovnou zodpovím. Kdy se vám hodí, abych se ozval — zítra večer, nebo raději ve čtvrtek?“','„Rozumím. Co by vám pomohlo se rozhodnout už teď — vidět to písemně, nebo si to nechat na pár dní? Domluvme si rovnou konkrétní den, kdy se ozvu — středa, nebo pátek?“','„V pořádku. Nechám vám všechno černé na bílém — a rovnou si řekněme termín, kdy se vrátíme k rozhodnutí, ať to nezapadne. Hodí se vám příští úterý, nebo čtvrtek?“','„Podobnou obavu měl minulý týden soused ze třetího patra — dnes mi napsal, že je rád, že do toho šel. Kdy se vám hodí, abych se ozval — zítra, nebo ve čtvrtek?“']},
+ {o:'Musím si to rozmyslet.',ctx:'Muž ~45, celou dobu přikyvoval, u podpisu couvá. Není proti — jen se bojí rozhodnout.',c:'Rozhodování',a:'Nerozhodný',keys:['perfektní','oceňuji','co konkrétně','promyslet'],tips:['„Jasně, rozmyslete si to. Jen mi řekněte, co konkrétně váhá — ať vám to příště rovnou zodpovím.“','„Rozumím. Co by vám pomohlo se rozhodnout už teď — vidět to písemně, nebo si to nechat na pár dní?“','„V pořádku. Nechám vám všechno černé na bílém, ať si to doma v klidu projdete a nemusíte se rozhodovat pod tlakem.“']},
  {o:'Nemám rád změny.',ctx:'Pán ~65, pohodlný, u jednoho operátora celý život. Změna = riziko.',c:'Loajalita',a:'Věrný zákazník',keys:['chápu','dávno','na druhou stranu','nic neměníte'],tips:['„Rozumím, věrnost má hodnotu. Nic se pro vás v používání nemění — jen to, co je pod kapotou, bude lepší.“','„Chápu tu obavu. Co kdybych vám ukázal, že se prakticky nic nezmění, kromě rychlejšího internetu?“','„To respektuju. Kdyby to znamenalo jen samé starosti, měl byste pravdu je odmítnout — pojďme se podívat, jestli to tak vůbec je.“']},
- {o:'Raději to podepíšu na prodejně.',ctx:'Žena ~55, opatrná na podpisy doma u dveří. Zájem má, důvěru ne.',c:'Důvěra',a:'Skeptik',keys:['rozumím','prodejn','připravím','doklad','starší 18','zítra mezi'],tips:['„Rozumím, tak to připravíme na prodejnu. Potřebuji jen ověřit tři věci: jste starší 18 let, máte platný doklad, a kdy vám můžeme zítra mezi 8. a 16. hodinou zavolat na potvrzení.“','„To je naprosto v pořádku. Připravím vám vše dopředu, ať na prodejně nečekáte — jen mi potvrďte, že jste starší 18 let a máte u sebe doklad, a domluvíme zítřejší telefonát na potvrzení.“']},
+ {o:'Raději to podepíšu na prodejně.',ctx:'Žena ~55, opatrná na podpisy doma u dveří. Zájem má, důvěru ne.',c:'Důvěra',a:'Skeptik',keys:['rozumím','prodejn','připravím','doklad','zavolat'],tips:['„To je naprosto v pořádku. Připravím vám vše dopředu, ať na prodejně nečekáte — kterou byste navštívila nejradši?“','„Rozumím, doma se podepisuje hůř. Dám vám na sebe kontakt a vy si zajděte, až budete mít čas — nic vás netlačí.“']},
  {o:'Poradím se s kamarádem, on tomu rozumí.',ctx:'Muž ~40, nejistý v technice, deleguje rozhodnutí na známého „ajťáka“.',c:'Rozhodování',a:'Nerozhodný',keys:['rozumím','dovysvětlit','jednoduše','co konkrétně'],tips:['„Jasně, dobrý nápad. Chcete mu rovnou zavolat? Klidně mu to vysvětlím přímo, ať máte jistotu.“','„Rozumím. Napíšu vám na papír pár technických čísel, co ho určitě bude zajímat — rychlost, typ připojení, cenu.“','„To je fér. Co kdybych vám nechal kontakt a vy se ozvali, až to spolu proberete?“']},
  {o:'Nechte mi leták, já se ozvu.',ctx:'Muž ~45, dveře už přivírá, nataženou rukou si říká o leták.',c:'Únik',a:'„Pošlete e-mail“',keys:['zakroužku','konkrétní','ozvu se já','termín'],tips:['„Jasně, nechám vám ho. Zakroužkuju tam jednu konkrétní věc pro váš dům — a raději se ozvu já, ať to nezapadne. Úterý nebo čtvrtek?“','„Dobře. Napíšu na leták svoje číslo — kdybyste se neozval, můžu se stavit příští týden znovu?“','„V pořádku. Než odejdu — je pro vás teď víc téma cena, nebo rychlost? Ať vím, co na letáku zvýraznit.“']},
- {o:'Netlačte na mě, nedělám unáhlená rozhodnutí.',ctx:'Muž ~50, ruce založené, mluví pomalu a rozvážně — testuje, jestli ho budeš tlačit.',c:'Rozhodování',a:'Nerozhodný',keys:['jak dlouho','rozhodoval','vidíte','výhody','žádný spěch','potřeboval'],tips:['„Naprosto rozumím, žádný spěch. Co byste potřeboval vidět nebo vědět, abyste se mohl v klidu rozhodnout?“','„A jak dlouho jste se rozhodoval pro připojení, které máte teď? Vždyť sám už teď vidíte výhody toho, co vám nabízím.“']},
- {o:'Mě ta wifi za 300 Kč stačí.',ctx:'Mladší muž ~28, v ruce mobil, mluví ledabyle — bagatelizuje potřebu.',c:'Potřeba',a:'Lovec cen',keys:['právě proto','nevyužíváte','ušetřit'],tips:['„A právě proto, že internet moc nevyužíváte, je na místě za něj ušetřit — pojďme se podívat, kolik reálně platíte za to, co nepoužíváte.“']},
- {o:'Já se na to podívám na internetu.',ctx:'Žena ~38, telefon už v ruce, chce rozhovor rychle ukončit vlastním výzkumem.',c:'Únik',a:'„Pošlete e-mail“',keys:['tam nejsou','vysvětlí','proškolený','zeptejte'],tips:['„Tam bohužel nejsou vždycky všechny slevy a nikdo vám to nevysvětlí. Mě se klidně zeptejte na cokoliv, jsem na tohle proškolený/á.“']},
- {o:'Tu pevnou linku ještě používáme, nechceme o ni přijít.',ctx:'Starší pár, oba v obýváku, ukazují na telefon na stolku — evidentně ho pořád používají.',c:'Zvyk',a:'Senior',keys:['skype','volat zdarma','pevné linky'],tips:['„Tomu rozumím. Zkoušeli jste ale někdy volat přes internet, třeba Skype? S našimi tarify navíc voláte do pevných linek zdarma.“']},
- {o:'RČ/OP vám nedám, to je moc osobní údaj.',ctx:'Muž ~40, založené ruce, nedůvěřivý pohled — bojí se zneužití údajů.',c:'Nedůvěra',a:'Skeptik',keys:['rodné číslo nepotřebuji','stačí mi','ověření','vaši ochranu'],tips:['„Chápu tu opatrnost. Rodné číslo vlastně vůbec nepotřebuji — stačí mi číslo občanky, a to jen kvůli ověření, že objednávku dělá skutečně majitel dané adresy.“','„Rozumím, je to citlivý údaj. Řeknu na rovinu: RČ nechceme, číslo OP je jen pro ověřovací telefonát z T-Mobile, ať víme, že objednávku potvrzujete vy osobně.“']},
- {o:'Proč se mě na tohle všechno vyptáváte?',ctx:'Muž ~35, mírně podrážděný tón, nechce odpovídat na osobní otázky o zvycích.',c:'Nedůvěra',a:'Skeptik',keys:['spoustu možností','nejlepší','netrávili'],tips:['„Ptám se proto, že máme pro vás spoustu možností a mým úkolem je vybrat tu nejlepší — ať spolu netrávíme probíráním všeho celý den.“']},
- {o:'Budu se možná brzy stěhovat.',ctx:'Žena ~30, krabice v předsíni na pozadí — evidentně se opravdu chystá stěhovat.',c:'Praktická',a:'Manažer domácnosti',keys:['kam','dostupnost','přestěhovat','není vázán'],tips:['„To není překážka — víte už kam? Podívám se na dostupnost v novém místě, služba se dá přestěhovat s vámi, není vázaná na jednu adresu.“']},
- {o:'Tak jo, to zní fajn.',ctx:'Sedíte spolu u stolu, papír s modelací mezi vámi. Zákazník přikyvoval celou prezentaci a teď mlčky čeká, co uděláš ty.',c:'Uzavření',a:'Připraven k podpisu',keys:['pojďme','sepsat','dopoledne','odpoledne','tento týden','příští týden'],tips:['„Super, tak si to pojďme rovnou sepsat — budete chtít instalaci spíš dopoledne, nebo odpoledne?“','„Výborně, sepíšeme to hned teď — hodí se vám instalace spíš tento týden, nebo až příští?“']},
- {o:'Jo, líbí se mi to.',ctx:'Byt, kuchyňský stůl. Zákazník řekl, že se mu nabídka líbí, ale ještě nic nepodepsal — čeká, co bude dál.',c:'Uzavření',a:'Připraven k podpisu',keys:['pojďme','sepsat','termín','dopoledne','odpoledne','týden'],tips:['„To rád slyším. Pojďme rovnou na termín — je vám milejší dopolední, nebo odpolední instalace?“','„Skvělé, tak to hned sepíšeme — hodí se vám spíš tento týden, nebo příští?“']},
 ];
 
 /* ================= DRIL FRÁZÍ ================= */
 let D=null;
-function startDrill(cat){
-  const pool=cat?[...OBJ_LIB.keys()].filter(i=>OBJ_LIB[i].c===cat):[...OBJ_LIB.keys()];
-  const idx=pool.sort(()=>Math.random()-.5).slice(0,cat?pool.length:5);
+function startDrill(){
+  const idx=[...OBJ_LIB.keys()].sort(()=>Math.random()-.5).slice(0,5);
   D={queue:idx,i:0,scores:[],state:'ask',last:null,offline:false,hint:false,retryMode:false,prev:null};
   go('drill');
 }
@@ -2433,7 +2097,7 @@ function drillRetry(){ D.prev=D.last; D.retryMode=true; D.state='ask'; render();
 function toggleHint(){ D.hint=!D.hint; render(true); }
 function vDrillSummary(){
   const avg=Math.round(D.scores.reduce((a,b)=>a+b,0)/D.scores.length);
-  if(!D.logged){ D.logged=true; const allClose=D.queue.every(i=>OBJ_LIB[i].c==='Uzavření'); skillsUpdate(allClose?'Uzavírání':'Práce s námitkami',avg); stSaveSoon(); }
+  if(!D.logged){ D.logged=true; skillsUpdate('Práce s námitkami',avg); stSaveSoon(); }
   const xp=20+Math.round(avg/10)*2;
   return `<div class="pad">
     <div style="text-align:center;margin:26px 0 20px">
@@ -2458,19 +2122,8 @@ function vDrillSummary(){
   </div>`;
 }
 
-/* ================= PERSISTENCE PROFILU (aplikace se nespouští od začátku) =================
-   window.storage je API prostředí Claude Artefaktů — mimo něj (GitHub Pages, lokální soubor)
-   neexistuje, takže bez polyfillu by veškerá perzistence (XP, skills, onboarding checkpoint...)
-   tiše selhávala. Polyfill níže drží stejné async get/set/delete rozhraní nad localStorage. */
-if(!window.storage){
-  window.storage={
-    _mem:{},
-    async get(key){ try{ const v=localStorage.getItem(key); return {value:v==null?undefined:v}; }catch(e){ return {value:this._mem[key]}; } },
-    async set(key,value){ try{ localStorage.setItem(key,value); }catch(e){ this._mem[key]=value; } },
-    async delete(key){ try{ localStorage.removeItem(key); }catch(e){ delete this._mem[key]; } },
-  };
-}
-const SAVE_KEYS=['onboarded','name','level','levelName','xp','xpNext','streak','skills','funnel','products','missionSteps','readyDone','readyXPGiven','tipTried','ucSel','hist','examStreak','examPassed','onboardActive','onboardStage','diagRP','pquizCats'];
+/* ================= PERSISTENCE PROFILU (aplikace se nespouští od začátku) ================= */
+const SAVE_KEYS=['onboarded','name','level','levelName','xp','xpNext','streak','skills','funnel','products','missionSteps','readyDone','tipTried','ucSel','hist','examStreak','examPassed'];
 let ST_PERSIST=false, _stT=null;
 S.hist=[]; S.examStreak=0; S.examPassed=false; S.examOn=false;
 async function stLoad(){
@@ -2482,14 +2135,7 @@ async function stLoad(){
     try{ await window.storage.set('fh_state','{}'); ST_PERSIST=true; }catch(e2){ ST_PERSIST=false; }
   }
   if(S.onboarded && (S.screen==='welcome'||S.screen==='assess')) S.screen='today';
-  if(!S.onboarded && S.onboardActive){
-    ONBOARD_MODE=true;
-    if(S.onboardStage==='quiz'){ S.screen='pquiz'; PQ=null; }
-    else if(S.onboardStage==='done'){ S.screen='skillmap'; }
-    else { S.ucSel='panelak'; VR_SCEN=genScenario('panelak', true); S.screen='rpsetup'; }
-  }
   render(true);
-  if(!S.onboarded && S.onboardActive) toast('Pokračuješ ve vstupní diagnostice ↻');
 }
 function stSave(){ const d={}; SAVE_KEYS.forEach(k=>d[k]=S[k]); try{ window.storage.set('fh_state',JSON.stringify(d)); }catch(e){} }
 function stSaveSoon(){ clearTimeout(_stT); _stT=setTimeout(stSave,1200); }
@@ -2509,22 +2155,11 @@ function histAdd(h){ h.ts=Date.now(); S.hist.unshift(h); if(S.hist.length>15) S.
    jinak jen v paměti + export). Učení modelu v demu = kalibrační kontext s nejvyšší
    prioritou vkládaný do všech AI promptů (RAG). Export JSONL = dataset připravený
    pro produkční fine-tuning / RLHF pipeline. */
-/* Výchozí produktová znalostní databáze (z KB dokumentu), předvyplněná jako aktivní
-   školicí podklady — agent s nimi počítá od prvního spuštění, i bez zásahu trenéra. */
-const DEFAULT_MATS=[
- {title:'Produktová fakta — pevný internet',text:'T-FIBER (vlastní optika): instalace ~2h, zdarma, tenký průvrt (jako tuha z propisky). Modem Premium 50Kč/měs (Wi-Fi 6), Základ 30Kč/měs, Bridge zdarma. FTTx (CETIN optika): 250/250=449Kč, 500/500=549Kč(akce 299/12m), 1000/1000=649Kč — vždy prémiový modem. xDSL (CETIN metalika): 50/5=549Kč, 100/20=649Kč(akce 299/6m), 250/100=749Kč; bonding=2x rychlost přes Terminátor; xDSL 20 nenabízet aktivně. CABLE (bývalý Vodafone/UPC): potřeba OKU kód, portace 14 dní, samoinstalace (bez technika), modem Premium 70Kč/měs. BEZDRÁTOVÝ INTERNET: jen když FTTH nejde technicky, nebo majitel odmítl vrtání, nebo doprodej na chatu — nikdy jako první volba. Statická IP 99Kč/měs (T-Fiber i Cable).',active:true},
- {title:'Produktová fakta — TV, Wifi, Security, Magenta 1, NEXT',text:'MAGENTA TV PLUS: funguje na jakémkoliv internetu (doporučeno 5Mb/s, 10 při 2 STB), set-top box Skyworth 50Kč/měs, balíčky s Netflix/HBO Max/Disney+ (spojení ne náhrada), zpětné zhlédnutí. WIFI MANAGER (zdarma v Můj T-Mobile): časová pravidla, internetová pauza, blokace zařízení, sdílení QR kódem — silný otvírák pro rodiny s dětmi. SECURITY: součástí všech tarifů NEXT, chrání i na mobilních datech. MAGENTA 1: 2–9 služeb pod jedním RČ, sleva 10–25 % (služby od 399 Kč), sdílená EU data 10/15GB, náhrada výpadku internetu mobilními daty, přednostní linka. NEXT U: 6–26 let, obsahuje Security. VERIFIKACE: objednávka jde bez podepsané smlouvy do TOS backoffice, zákazníka info dopředu = méně storen.',active:true},
- {title:'Doplňková technika námitek',text:'"Netlačte na mě, nedělám unáhlená rozhodnutí" → nejdřív ústup ("Naprosto rozumím, žádný spěch, co byste potřeboval vidět, abyste se mohl rozhodnout?"), teprve pak případně "Jak dlouho jste se rozhodoval pro to, co máte teď?" "Mě ta wifi za 300 stačí" → "Právě proto, že ji nevyužíváte moc, je na místě ušetřit." "Podívám se na to na internetu" → "Tam nejsou vždy všechny slevy a nikdo vám nic nevysvětlí, mě se klidně zeptejte na cokoliv." "RČ/OP vám nedám" → NIKDY netvrdit, že zákazník už údaje poskytl (u nových zákazníků to není pravda) — místo toho: "Rodné číslo vůbec nepotřebuji, stačí OP jen pro ověření, že objednávku děláte vy." "Proč se mě vyptáváte?" → "Abych vám vybral tu nejlepší možnost, ať netrávíme celý den probíráním všeho." "Budu se stěhovat" → "Není to překážka, mobilní internet není vázán na adresu, přestěhuje se s vámi."',active:true},
-];
 let FB={items:[],mats:[]};
 let FB_PERSIST=false;
-function seedDefaultMats(){
-  if(!FB.mats.length){ FB.mats=DEFAULT_MATS.map((m,i)=>({id:Date.now()+i,title:m.title,text:m.text,active:true})); }
-}
 async function fbLoad(){
   try{ const r=await window.storage.get('fh_fb'); if(r&&r.value){ FB=JSON.parse(r.value); } FB_PERSIST=true; }
   catch(e){ try{ await window.storage.set('fh_fb', JSON.stringify(FB)); FB_PERSIST=true; }catch(e2){ FB_PERSIST=false; } }
-  seedDefaultMats(); fbSave();
 }
 async function fbSave(){ try{ await window.storage.set('fh_fb', JSON.stringify(FB)); FB_PERSIST=true; }catch(e){} }
 function fbAdd(entry){
@@ -2689,8 +2324,7 @@ const VIEWS={
   today:vToday, mission:vMission, ready:vReady,
   learn:vLearn, winthedoor:vWinTheDoor, archetypes:vArchetypes, archetype:vArchetype,
   lesson:vLesson,
-  rpsetup:vRpSetup, voicerp:vVoicerp, voicerpresult:vVoiceRpResult, drill:vDrill, lesson2:vLesson2, products:vProducts, pquiz:vProductQuiz, aitrain:vAiTrain,
-  prep:vPrep, close:vClose,
+  rpsetup:vRpSetup, voicerp:vVoicerp, voicerpresult:vVoiceRpResult, drill:vDrill, lesson2:vLesson2, products:vProducts, aitrain:vAiTrain,
   sell:vSell, bottleneck:vBottleneck, entry:vEntry, earnings:vEarnings,
   community:vCommunity, tip:vTip, league:vLeague,
   profile:vProfile, team:vTeam, studio:vStudio,
