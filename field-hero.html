@@ -2180,6 +2180,12 @@ function sessSave(){
   fbAdd({kind:'session',rating:(VR.sessStars||0)>=4?'up':'down',stars:VR.sessStars||0,note,correction:note,ucid:c.ucid,persona:c.name,mood:c.mood,dif:c.dif,aiLine:'celá simulace: fáze '+VR.phase+'/5'});
   toast('Hodnocení simulace uloženo ✓');
 }
+function onboardSkip(){
+  const f=VR.first||{};
+  S.diagRP=S.diagRP||{phase:VR.phase,scores:VR.scores.slice(),first:f,success:VR.success,turn:VR.turn,dif:VR.c.dif};
+  S.onboardStage='quiz'; stSaveSoon(); addXP(10);
+  VR=null; go('pquiz');
+}
 function vVoiceRpResult(){
   const avg=VR.scores.length?VR.scores.reduce((a,b)=>a+b,0)/VR.scores.length:0;
   const s=Math.round((VR.phase/5*60)+(avg/2*40));
@@ -2268,7 +2274,7 @@ function vVoiceRpResult(){
     </div>`}
     ${weakOnboard
       ? `<button class="btn" onclick="ONBOARD_RETRIED=true;ONBOARD_ATTEMPT1={phase:${VR.phase},success:${VR.success}};VR=null;startVoiceRp()">🔁 Zkusit to samé znovu</button>
-         <button class="btn ghost" style="margin-top:10px" onclick="S.diagRP=S.diagRP||{phase:${VR.phase},scores:${JSON.stringify(VR.scores)},first:${JSON.stringify(f)},success:${VR.success},turn:${VR.turn},dif:${VR.c.dif}};S.onboardStage='quiz';stSaveSoon();addXP(10);VR=null;go('pquiz')">Pokračovat i tak ›</button>`
+         <button class="btn ghost" style="margin-top:10px" onclick="onboardSkip()">Pokračovat i tak ›</button>`
       : `<button class="btn" onclick="${ONBOARD_MODE?"VR=null;go('pquiz')":(passed?'addXP(40);':'')+"VR=null;const _t=S.trainerMode;S.trainerMode=false;go(_t?'aitrain':'"+(RP_FROM_MISSION?'mission':'learn')+"')"}">${ONBOARD_MODE?'Pokračovat na produktový test ›':(passed?'Pokračovat · +40 XP':(S.trainerMode?'Zpět na AI Trénink':'Zpět na učení'))}</button>`}
   </div>`;
 }
