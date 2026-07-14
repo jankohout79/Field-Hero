@@ -2051,6 +2051,9 @@ function firstTenCheck(tx){
   const words=tx.split(/\s+/).filter(Boolean).length;
   return {ident,legit,hook,words,pass:ident&&(legit||hook)&&words<=50};
 }
+/* Detekce zjišťovací otázky — nezávisle na slovosledu (dřív "vyhovuje vám" nechytilo
+   běžné "co vám nejvíc vyhovuje"). */
+const Q_PATTERNS='jaké připojení|jaký internet|kolik zařízení|co vás|co vám|co doma|jak funguje|jak zvládá|vyhovuje|spokojen[íý] s|jak jste|kdo u vás|co používáte|k čemu.{0,15}využ|jaké máte zkušenost';
 function offlineStep(tx){
   const c=VR.c, t=' '+tx.toLowerCase().replace(/[.,!?]/g,' ')+' ';
   const has={
@@ -2058,8 +2061,8 @@ function offlineStep(tx){
     legit:/(oznámení|správc|vchod|ulic| dům |domě|dohod|soused|nárok|výhod|zásuvk|develop|kolega|nástěnk|akci v tomto)/.test(t),
     hook:/(jedna věc|vteřin|nezdržím|chvilku|krátce|zaujm|netuší|zajímav|efektivní)/.test(t),
     permission:/(kdykoliv|kdykoli).{0,30}(řekněte|řekni|zastavte|nebudu (vás |tě )?zdržovat|dávat smysl)/.test(t),
-    q:/(jaké připojení|jaký internet|kolik zařízení|co vás|co doma|jak funguje|jak zvládá|vyhovuje vám|spokojen[íý] s|jak jste|kdo u vás|co používáte|k čemu.{0,15}využ|jaké máte zkušenost)/.test(t),
-    qCount:(t.match(/jaké připojení|jaký internet|kolik zařízení|co vás|co doma|jak funguje|jak zvládá|vyhovuje vám|spokojen[íý] s|jak jste|kdo u vás|co používáte|k čemu.{0,15}využ|jaké máte zkušenost/g)||[]).length,
+    q:new RegExp(Q_PATTERNS).test(t),
+    qCount:(t.match(new RegExp(Q_PATTERNS,'g'))||[]).length,
     emp:/(chápu|rozumím|oceňuji|to je fér|omlouvám|mrzí|naprosto|perfektní|výborně)/.test(t),
     value:/(optik|symetr|upload|výpad|zpětn|wifi manager|magenta|stabil|kapacit|faktu|sleva|neomezen|vlastní kapacit|rozdíl|řeší|vlákno|rychlej|spolehliv|nebude sekat|neseká|kvalit)/.test(t),
     step:/(posadit|posaďme|posad|termín|zítra|schůzk|magnetov|srovnám|srovnat|ukážu|ukázat|zavolá|hodí|pojďme|pět minut|na papíře|stavím se|domluvíme|domluvit|kdy vám|kdy se|víkend|dopoledne|odpoledne|tento týden|příští týden)/.test(t),
