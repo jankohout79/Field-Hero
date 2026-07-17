@@ -1783,10 +1783,10 @@ DOPLŇKOVÁ PRAVIDLA METODIKY (potvrzeno trenérem, vylepšeno deep-research val
 - ŠKOLICÍ PODKLADY NEJSOU SCÉNÁŘ: materiály níže (KALIBRACE, ŠKOLICÍ PODKLADY) slouží jen jako faktická reference pro TVOJE hodnocení prodejce — nikdy z nich doslovně necituj ani neparafrázuj hotové věty v roli zákazníka ani v koučovské poznámce; prodejce se má naučit improvizovat vlastními slovy, ne dostat nadiktovanou odpověď.
 `;
 const CLAUDE_PROXY_URL='https://field-hero-proxy.field-hero-jkh79.workers.dev/v1/messages';
-async function askClaude(prompt,tier='customer'){
+async function askClaude(prompt,tier='customer',maxTokens=1000){
   const res=await fetch(CLAUDE_PROXY_URL,{
     method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({model:MODEL_TIERS[tier]||'claude-sonnet-4-6',max_tokens:1000,messages:[{role:'user',content:prompt}]})
+    body:JSON.stringify({model:MODEL_TIERS[tier]||'claude-sonnet-4-6',max_tokens:maxTokens,messages:[{role:'user',content:prompt}]})
   });
   if(!res.ok) throw new Error('api '+res.status);
   const data=await res.json();
@@ -2674,7 +2674,7 @@ PŘEPIS ROZHOVORU:
 ${transcriptText.slice(0,8000)}
 
 Ohodnoť KAŽDÝ ze 4 kroků (nalezeno / částečně / chybí + 1 věta proč), ověř i faktickou přesnost tvrzení o produktech/cenách proti databázi výše, agreguj celkové skóre 0–16, a napiš 3 nejdůležitější věci ke zlepšení.
-Vrať POUZE validní JSON: {"skore":0,"kroky":[{"nazev":"Elegantní zahájení","hodnoceni":"nalezeno|částečně|chybí","pozn":"..."},{"nazev":"Analýza potřeb","hodnoceni":"...","pozn":"..."},{"nazev":"Prezentace","hodnoceni":"...","pozn":"..."},{"nazev":"Uzavření","hodnoceni":"...","pozn":"..."}],"top3":["...","...","..."]}`,'deep_coach');
+Vrať POUZE validní JSON: {"skore":0,"kroky":[{"nazev":"Elegantní zahájení","hodnoceni":"nalezeno|částečně|chybí","pozn":"..."},{"nazev":"Analýza potřeb","hodnoceni":"...","pozn":"..."},{"nazev":"Prezentace","hodnoceni":"...","pozn":"..."},{"nazev":"Uzavření","hodnoceni":"...","pozn":"..."}],"top3":["...","...","..."]}`,'deep_coach',1800);
   if(!out||typeof out.skore!=='number'||!Array.isArray(out.kroky)) throw new Error('bad json');
   return out;
 }
