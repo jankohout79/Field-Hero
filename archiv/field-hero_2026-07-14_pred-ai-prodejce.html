@@ -1925,36 +1925,11 @@ function vRpSetup(){
 
 /* ================= HLASOVÝ ROLE-PLAY: KOMPLETNÍ, FÁZOVANÝ ================= */
 let VR=null;
-function startVoiceRp(role){
-  if(role==='buyer'){
-    const c=VR_SCEN||genScenario(S.ucSel);
-    VR={c,chat:[],scores:[],mets:[],turn:0,phase:0,state:'think',offline:false,ended:false,success:false,first:null,painShown:false,rt:null,ratedTurns:{},exam:false,role:'buyer',error:false};
-    go('voicerp'); vrSellerOpen();
-    return;
-  }
+function startVoiceRp(){
   if(S.examOn){ let g=VR_SCEN; let guard=0; while((!g||g.dif<3)&&guard++<50) g=genScenario(S.ucSel); VR_SCEN=g; }
   const c=VR_SCEN||genScenario(S.ucSel);
-  VR={c,chat:[{r:'cust',t:c.open}],scores:[],mets:[],turn:0,phase:0,state:'idle',offline:false,ended:false,success:false,first:null,painShown:false,rt:null,ratedTurns:{},exam:S.examOn,role:'seller'};
+  VR={c,chat:[{r:'cust',t:c.open}],scores:[],mets:[],turn:0,phase:0,state:'idle',offline:false,ended:false,success:false,first:null,painShown:false,rt:null,ratedTurns:{},exam:S.examOn};
   go('voicerp'); speak(c.open);
-}
-/* AI hraje prodejce (obrácený role-play pro kalibraci agenta) — vygeneruje úvodní repliku,
-   žádný offline fallback (viz vrProcessBuyer): jde o kvalitativní kalibraci, ne cvičení. */
-async function vrSellerOpen(){
-  VR.state='think'; render();
-  try{
-    const c=VR.c;
-    const out=await askClaude(
-`Jsi masterclass obchodník T-Mobile Osobně (D2D prodej — Fiber internet, Magenta TV, Magenta 1). Právě jsi zazvonil/a u dveří v lokalitě: ${c.seg} — ${c.segd}.
-Otevři rozhovor přesně podle metodiky Elegantního zahájení: jméno + firma T-Mobile Osobně (ideálně zmínka o průkazu), logický důvod návštěvy (např. oznámení ve vchodě, sociální důkaz — "jako u vašich sousedů"), respekt k jeho času. 1–2 věty, přirozená hovorová čeština, žádné scénické poznámky v hvězdičkách.
-${AGENT_RULES}
-${buildMaterials()}
-Vrať POUZE validní JSON: {"prodejce":"..."}`,'customer');
-    VR.chat.push({r:'cust',t:out.prodejce});
-    VR.phase=1; VR.state='idle';
-  }catch(e){
-    VR.error=true; VR.state='idle';
-  }
-  render(); $('screen')&&($('screen').scrollTop=$('screen').scrollHeight);
 }
 function vVoicerp(){
   if(!VR) startVoiceRp();
@@ -1969,13 +1944,10 @@ function vVoicerp(){
     }
   });
   let controls='';
-  if(VR.error){
-    controls=`<div class="card hot" style="text-align:center"><p style="font-size:13px;line-height:1.5">⚠️ AI prodejce se teď nepodařilo spojit. Zkus to prosím znovu — obrácený role-play offline nefunguje, aby kalibrace zůstala spolehlivá.</p>
-      <button class="btn mini" style="margin-top:10px" onclick="VR.error=false;render(true)">Zkusit znovu</button></div>`;
-  } else if(VR.ended){
+  if(VR.ended){
     controls=`<button class="btn" onclick="go('voicerpresult')">Zobrazit vyhodnocení</button>`;
   } else if(VR.state==='think'){
-    controls=`<div class="michint" style="padding:16px 0"><span class="spin"></span> &nbsp;${VR.role==='buyer'?'AI prodejce přemýšlí':'Zákazník reaguje'}…</div>`;
+    controls=`<div class="michint" style="padding:16px 0"><span class="spin"></span> &nbsp;Zákazník reaguje…</div>`;
   } else if(VR.state==='rec'){
     controls=`<div class="livetx" id="vrLive">…poslouchám</div>
       <div class="micwrap"><button class="micbtn rec" onclick="stopRec()">■</button>
@@ -1983,7 +1955,7 @@ function vVoicerp(){
   } else {
     const useVoice=sup&&!S.forceText;
     controls=`<div class="micwrap">
-      ${useVoice?`<button class="micbtn" onclick="vrRecord()">🎤</button><div class="michint">${VR.role==='buyer'?'Odpověz jako zákazník':(VR.turn===0?'Prvních 10 vteřin — teď':'Klepni a odpověz nahlas')}</div>
+      ${useVoice?`<button class="micbtn" onclick="vrRecord()">🎤</button><div class="michint">${VR.turn===0?'Prvních 10 vteřin — teď':'Klepni a odpověz nahlas'}</div>
              <button class="ttsbtn" onclick="toggleText()">✍️ raději napíšu</button>`
            :`<textarea class="fallback" id="vrText" placeholder="Napiš odpověď…"></textarea>
              <button class="btn mini" onclick="vrSendText()">Odeslat</button>
@@ -1991,7 +1963,7 @@ function vVoicerp(){
     </div>`;
   }
   let ratePanel='';
-  if(S.trainerMode && VR.role!=='buyer' && VR.turn>0 && !VR.ratedTurns[VR.turn] && !VR.ended){
+  if(S.trainerMode && VR.turn>0 && !VR.ratedTurns[VR.turn] && !VR.ended){
     if(!VR.rt) VR.rt={cust:null,coach:null,tags:[],txt:''};
     const R=VR.rt;
     const TAGS=['nerealistické','moc vstřícný','málo náročný','špatné skóre','pomohl prodejci'];
@@ -2022,8 +1994,8 @@ function vVoicerp(){
     </div>
     <div class="row between" style="margin-bottom:8px">
       <div class="row" style="gap:10px">
-        <div class="avatar sm" style="background:linear-gradient(135deg,#3A3644,#221F2A)">${VR.role==='buyer'?'🛎️':VR.c.emoji}</div>
-        <div><div class="h-sm" style="font-size:12.5px">${VR.role==='buyer'?'AI prodejce':VR.c.name}</div><div class="tiny">${VR.role==='buyer'?`Ty = zákazník${CALIB_PERSONA?' ('+CALIB_PERSONA+')':''} · ${VR.c.seg}`:VR.c.seg+' · '+(VR.offline?'offline':'AI')} · výměna ${Math.min(VR.turn+1,8)}/8${VR.role==='buyer'?'':' · 🎯 '+VR.c.win}</div></div>
+        <div class="avatar sm" style="background:linear-gradient(135deg,#3A3644,#221F2A)">${VR.c.emoji}</div>
+        <div><div class="h-sm" style="font-size:12.5px">${VR.c.name}</div><div class="tiny">${VR.c.seg} · ${VR.offline?'offline':'AI'} · výměna ${Math.min(VR.turn+1,8)}/8 · 🎯 ${VR.c.win}</div></div>
       </div>
     </div>
     <div class="phaserow">${FAZE.map((f,i)=>`<div class="phasedot ${VR.phase>i?'on':''}"><div class="pd"></div><div class="pl">${f}</div></div>`).join('')}</div>
@@ -2145,7 +2117,6 @@ function offlineStep(tx){
   return {reply,sc,phase:p,end,success,note};
 }
 async function vrProcess(tx,dur){
-  if(VR.role==='buyer') return vrProcessBuyer(tx,dur);
   const met=dur>0?speechMetrics(tx,dur):null;
   VR.chat.push({r:'me',t:tx,met}); if(met) VR.mets.push(met);
   VR.turn++;
@@ -2202,42 +2173,11 @@ Vrať POUZE validní JSON:
   if(out.konec!=='pokracuje'||VR.turn>=8){ VR.ended=true; VR.success=out.konec==='uspech'&&VR.phase>=4; }
   VR.state='idle'; render(); $('screen').scrollTop=$('screen').scrollHeight;
 }
-/* Obrácený role-play: AI hraje prodejce, živý člověk zákazníka. Žádný offline fallback —
-   jde o kvalitativní kalibraci agenta, heuristika by ji jen zkreslila (viz vrSellerOpen). */
-async function vrProcessBuyer(tx,dur){
-  const met=dur>0?speechMetrics(tx,dur):null;
-  VR.chat.push({r:'me',t:tx,met}); if(met) VR.mets.push(met);
-  VR.turn++;
-  VR.state='think'; VR.error=false; render(); $('screen').scrollTop=$('screen').scrollHeight;
-  try{
-    const c=VR.c;
-    const hist=VR.chat.map(m=>(m.r==='cust'?'PRODEJCE (AI): ':'ZÁKAZNÍK: ')+m.t).join('\n');
-    const out=await askClaude(
-`Jsi masterclass obchodník T-Mobile Osobně (D2D prodej — Fiber internet, Magenta TV, Magenta 1), pokračuješ v rozhovoru u dveří/uvnitř bytu. Poslední replika je od zákazníka — hraje ho živý člověk, ty jsi prodejce.
-Drž se metodiky 5 kroků (Kontakt → Zaujetí → Analýza s min. 2 zjišťovacími otázkami → Hodnota/Prezentace vázaná na to, co zákazník řekl → Krok/Uzavření s tahem na bránu dvěma pozitivními možnostmi), technikou na námitky Pochop → Přerámuj → Found (konkrétní, ověřitelný příklad, nikdy si nevymýšlej fakt jako jistotu), a fakty z databáze produktů níže.
-${AGENT_RULES}
-${buildMaterials()}
-Dosavadní rozhovor:
-${hist}
-
-Urči nejvyšší krok metodiky, který jsi právě v této replice aplikoval (0=žádný, 1=Kontakt, 2=Zaujetí, 3=Analýza, 4=Hodnota/Prezentace, 5=Krok/Uzavření), a stav rozhovoru.
-Odpovídej 1–2 větami hovorovou češtinou, scénické poznámky v *hvězdičkách*. Max 8 výměn.
-Vrať POUZE validní JSON: {"prodejce":"...","faze":0,"konec":"pokracuje|uspech|neuspech"}`,'customer');
-    if(typeof out.faze!=='number') out.faze=VR.phase;
-    VR.phase=Math.max(VR.phase,Math.min(5,out.faze|0));
-    VR.chat.push({r:'cust',t:out.prodejce});
-    speak(out.prodejce);
-    if(out.konec!=='pokracuje'||VR.turn>=8){ VR.ended=true; VR.success=out.konec==='uspech'; }
-  }catch(e){
-    VR.error=true;
-  }
-  VR.state='idle'; render(); $('screen').scrollTop=$('screen').scrollHeight;
-}
 function sessStar(n){ VR.sessStars=n; render(true); }
 function sessSave(){
   const el=$('sessTxt'); const note=(el&&el.value.trim())||'';
   const c=VR.c;
-  fbAdd({kind:'session',rating:(VR.sessStars||0)>=4?'up':'down',stars:VR.sessStars||0,note,correction:note,ucid:c.ucid,persona:c.name,mood:c.mood,dif:c.dif,aiLine:'celá simulace: fáze '+VR.phase+'/5',role:VR.role==='buyer'?'ai-seller':undefined,source:VR.role==='buyer'?'live':undefined});
+  fbAdd({kind:'session',rating:(VR.sessStars||0)>=4?'up':'down',stars:VR.sessStars||0,note,correction:note,ucid:c.ucid,persona:c.name,mood:c.mood,dif:c.dif,aiLine:'celá simulace: fáze '+VR.phase+'/5'});
   toast('Hodnocení simulace uloženo ✓');
 }
 function onboardSkip(){
@@ -2246,34 +2186,7 @@ function onboardSkip(){
   S.onboardStage='quiz'; stSaveSoon(); addXP(10);
   VR=null; go('pquiz');
 }
-function vVoiceRpResultBuyer(){
-  return `<div class="pad">
-    <span class="eyebrow">Kalibrace · AI = prodejce</span>
-    <h1 class="h-md" style="margin:6px 0 12px">${VR.phase>=5?'AI dotáhlo rozhovor do uzavření 🎉':'Rozhovor skončil ve fázi '+VR.phase+'/5'}</h1>
-    <div class="phaserow">${FAZE.map((f,i)=>`<div class="phasedot ${VR.phase>i?'on':''}"><div class="pd"></div><div class="pl">${f}</div></div>`).join('')}</div>
-    <div class="card fade" style="margin-top:12px;max-height:260px;overflow-y:auto">
-      <span class="eyebrow mut">Přepis rozhovoru</span>
-      <div style="margin-top:8px;font-size:12.5px;line-height:1.6">${VR.chat.map(m=>`<p style="margin-bottom:6px"><b style="color:${m.r==='cust'?'var(--magenta-hi)':'var(--text)'}">${m.r==='cust'?'AI prodejce':'Ty (zákazník)'}:</b> ${m.t}</p>`).join('')}</div>
-    </div>
-    <div class="ratebar" style="margin-top:12px">
-      <span class="eyebrow" style="color:var(--amber)">Hodnocení realističnosti AI prodejce</span>
-      <div class="row" style="gap:6px;margin:10px 0">${[1,2,3,4,5].map(n=>`<span class="star ${(VR.sessStars||0)>=n?'on':''}" onclick="sessStar(${n})">⭐</span>`).join('')}</div>
-      <textarea class="fallback" id="sessTxt" style="min-height:52px" placeholder="Co bys na AI prodejci změnil/a? Co bylo špatně? (volitelné)"></textarea>
-      <button class="btn mini" style="margin-top:8px;background:var(--amber);color:#2a1c00" onclick="sessSave()">Uložit hodnocení</button>
-    </div>
-    <div class="card flat fade" style="margin-top:12px">
-      <span class="eyebrow mut">Volitelně</span>
-      <button class="btn ghost mini" style="margin-top:8px" onclick="runFormReviewLive()">🔍 AI rozbor podle 16bodového formuláře TOS</button>
-      ${formReviewHtml()}
-    </div>
-    <div class="row" style="gap:10px;margin-top:14px">
-      <button class="btn ghost" style="flex:1" onclick="VR=null;FORM_REVIEW=null;startVoiceRp('buyer')">🔁 Nový pokus</button>
-      <button class="btn" style="flex:1" onclick="VR=null;FORM_REVIEW=null;S.trainerMode=false;go('aitrain')">Zpět na AI Trénink</button>
-    </div>
-  </div>`;
-}
 function vVoiceRpResult(){
-  if(VR.role==='buyer') return vVoiceRpResultBuyer();
   const avg=VR.scores.length?VR.scores.reduce((a,b)=>a+b,0)/VR.scores.length:0;
   const s=Math.round((VR.phase/5*60)+(avg/2*40));
   const passed=VR.success;
@@ -2655,54 +2568,6 @@ function buildMaterials(){
   return '\n\nDALŠÍ ŠKOLICÍ PODKLADY OD TRENÉRŮ (závazný vstup):\n'+act.map(m=>'### '+m.title+'\n'+m.text.slice(0,1500)).join('\n')+'\n';
 }
 
-/* ---------- Sdílené hodnocení přepisu podle oficiálního 16bodového formuláře TOS =========
-   Používá se jak pro živý obrácený role-play (Volitelně: rychlé srovnání s formulářem),
-   tak pro import přepisu. Kostra (sekce 8) neuvádí přesnou váhu jednotlivých 13 prvků na
-   16 bodů — necháváme AI ohodnotit holisticky, nevymýšlíme si váhy, které zdroj neuvádí.
-   Bez offline fallbacku — jde o kvalitativní analýzu, kterou nemá smysl nahrazovat regexem. */
-let FORM_REVIEW=null, FORM_REVIEW_LOADING=false, FORM_REVIEW_ERR=false;
-async function gradeSellerTranscript(transcriptText){
-  const out=await askClaude(
-`Jsi mentor/team leader T-Mobile Osobně a hodnotíš přepis D2D prodejního rozhovoru (Fiber internet, Magenta TV, Magenta 1) podle OFICIÁLNÍHO firemního hodnoticího formuláře (max. 16 bodů, 4 kroky; Příprava se nehodnotí samostatně):
-1. Elegantní zahájení — Icebreak · logický důvod návštěvy (proč tam jsem) · výhody z mé návštěvy
-2. Analýza potřeb — informativní otázky (TV/Internet/Hlas) · min. 3 problémové otázky · otázky na přání · nominace do obydlí
-3. Prezentace — prezentace produktu · příběh s užitkem pro zákazníka · zvládání námitek
-4. Uzavření — tah na bránu · rekapitulace / info o dalších krocích · reference
-${AGENT_RULES}
-${buildMaterials()}
-PŘEPIS ROZHOVORU:
-${transcriptText.slice(0,8000)}
-
-Ohodnoť KAŽDÝ ze 4 kroků (nalezeno / částečně / chybí + 1 věta proč), ověř i faktickou přesnost tvrzení o produktech/cenách proti databázi výše, agreguj celkové skóre 0–16, a napiš 3 nejdůležitější věci ke zlepšení.
-Vrať POUZE validní JSON: {"skore":0,"kroky":[{"nazev":"Elegantní zahájení","hodnoceni":"nalezeno|částečně|chybí","pozn":"..."},{"nazev":"Analýza potřeb","hodnoceni":"...","pozn":"..."},{"nazev":"Prezentace","hodnoceni":"...","pozn":"..."},{"nazev":"Uzavření","hodnoceni":"...","pozn":"..."}],"top3":["...","...","..."]}`,'deep_coach');
-  if(!out||typeof out.skore!=='number'||!Array.isArray(out.kroky)) throw new Error('bad json');
-  return out;
-}
-async function runFormReview(transcriptText,source){
-  FORM_REVIEW_LOADING=true; FORM_REVIEW_ERR=false; FORM_REVIEW=null; render(true);
-  try{
-    const out=await gradeSellerTranscript(transcriptText);
-    FORM_REVIEW=out;
-    fbAdd({kind:'formscore',role:'ai-seller',source,text:transcriptText.slice(0,4000),correction:(out.top3||[]).join(' | '),note:'skóre '+out.skore+'/16',priority:'high'});
-  }catch(e){ FORM_REVIEW_ERR=true; }
-  FORM_REVIEW_LOADING=false; render(true);
-}
-function runFormReviewLive(){
-  const transcript=VR.chat.map(m=>(m.r==='cust'?'PRODEJCE (AI): ':'ZÁKAZNÍK: ')+m.t).join('\n');
-  runFormReview(transcript,'live');
-}
-function formReviewHtml(){
-  if(FORM_REVIEW_LOADING) return `<div class="michint" style="padding:16px 0"><span class="spin"></span> &nbsp;AI rozbor podle formuláře…</div>`;
-  if(FORM_REVIEW_ERR) return `<p class="tiny" style="color:var(--red)">⚠️ Rozbor se nepodařilo vytvořit — zkus to znovu (vyžaduje online připojení).</p>`;
-  if(!FORM_REVIEW) return '';
-  const R=FORM_REVIEW;
-  return `<div class="card flat" style="margin-top:10px">
-    <div class="row between"><span class="eyebrow mut">Rozbor podle formuláře TOS</span><span style="font-family:var(--disp);font-weight:700;color:var(--magenta-hi)">${R.skore}/16</span></div>
-    ${R.kroky.map(k=>`<div style="margin-top:8px"><div class="row between"><b style="font-size:12.5px">${k.nazev}</b><span class="chip ${k.hodnoceni==='nalezeno'?'grn':(k.hodnoceni==='částečně'?'amb':'red')}" style="font-size:10px">${k.hodnoceni}</span></div><p class="tiny" style="margin-top:2px">${k.pozn}</p></div>`).join('')}
-    <div style="margin-top:10px"><span class="eyebrow mut">Top 3 ke zlepšení</span><p class="tiny" style="margin-top:4px;line-height:1.6">${(R.top3||[]).map((t,i)=>(i+1)+'. '+t).join('<br>')}</p></div>
-  </div>`;
-}
-
 /* ---------- UI obrazovka AI Trénink ---------- */
 function fbStats(){
   const i=FB.items;
@@ -2724,35 +2589,11 @@ function vAiTrain(){
 
     <div class="card hot fade">
       <span class="eyebrow">Kalibrační rozhovor</span>
-      <div class="row" style="gap:8px;margin:10px 0">
-        <button class="ttsbtn ${CALIB_ROLE==='seller'?'on':''}" style="flex:1" onclick="toggleCalibRole('seller')">🧑‍💼 Ty = prodejce</button>
-        <button class="ttsbtn ${CALIB_ROLE==='buyer'?'on':''}" style="flex:1" onclick="toggleCalibRole('buyer')">🛎️ Ty = zákazník, AI = prodejce</button>
-      </div>
-      ${CALIB_ROLE==='seller'?`
       <p class="sub" style="margin:8px 0 10px">Hraješ prodejce proti AI zákazníkovi. Po každé výměně ohodnotíš realismus zákazníka i přesnost kouče — a můžeš uložit svoji odpověď jako vzor.</p>
       <div class="chiprow" style="margin-bottom:12px">
         ${UC.map(u=>`<button class="chip ${S.ucSel===u.id?'mag':''}" style="cursor:pointer;border:none" onclick="setUc('${u.id}')">${u.n}</button>`).join('')}
-      </div>`:`
-      <p class="sub" style="margin:8px 0 10px">Hraješ zákazníka, AI se ti snaží prodat podle metodiky a etického kodexu. Po rozhovoru ohodnotíš, jak realisticky a přesně AI prodávalo.</p>
-      <div class="chiprow" style="margin-bottom:8px">
-        ${UC.map(u=>`<button class="chip ${S.ucSel===u.id?'mag':''}" style="cursor:pointer;border:none" onclick="setUc('${u.id}')">${u.n}</button>`).join('')}
       </div>
-      <p class="tiny" style="margin-bottom:6px">Volitelně: vyber si vlastní náladu (jen pro tebe, AI ji nezná):</p>
-      <div class="chiprow" style="margin-bottom:12px">
-        ${CALIB_PERSONAS.map(p=>`<button class="chip ${CALIB_PERSONA===p?'mag':''}" style="cursor:pointer;border:none" onclick="setCalibPersona('${p}')">${p}</button>`).join('')}
-      </div>`}
       <button class="btn mini" onclick="startCalib()">🎤 Spustit kalibraci</button>
-    </div>
-
-    <div class="card fade">
-      <span class="eyebrow mut">📝 Import přepisu k analýze</span>
-      <p class="tiny" style="margin:6px 0 10px">Vlož nebo nahraj textový přepis reálného rozhovoru (např. "Zákazník: ... / Prodejce: ..."). AI ho ohodnotí podle 16bodového formuláře TOS.</p>
-      <textarea class="fallback" id="importTxt" placeholder="Vlož přepis rozhovoru…"></textarea>
-      <div class="row" style="gap:8px;margin-top:8px">
-        <button class="btn ghost mini" style="flex:1" onclick="runImportGrading()">🔍 Ohodnotit přepis</button>
-        <label class="btn ghost mini" style="flex:1;cursor:pointer">📎 Nahrát .txt<input type="file" accept=".txt" style="display:none" onchange="importTranscriptFile(event)"></label>
-      </div>
-      ${formReviewHtml()}
     </div>
 
     <div class="card fade d1">
@@ -2779,7 +2620,7 @@ function vAiTrain(){
       ${FB.items.length?FB.items.slice(0,8).map((f,i)=>`
         <div style="padding:10px 0;border-bottom:1px solid var(--line)">
           <div class="row between">
-            <span class="chip ${f.kind==='gold'?'grn':(f.rating==='down'?'red':'grn')}" style="font-size:10px">${f.kind==='gold'?'⭐ vzor':(f.kind==='cust'?'zákazník':(f.kind==='session'?(f.role==='ai-seller'?'AI prodejce':'rozhovor'):(f.kind==='formscore'?'📋 rozbor '+(f.source==='import'?'(import)':'(live)'):'kouč')))} ${f.rating==='down'?'👎':(f.rating==='up'?'👍':'')}</span>
+            <span class="chip ${f.kind==='gold'?'grn':(f.rating==='down'?'red':'grn')}" style="font-size:10px">${f.kind==='gold'?'⭐ vzor':(f.kind==='cust'?'zákazník':(f.kind==='session'?'rozhovor':'kouč'))} ${f.rating==='down'?'👎':(f.rating==='up'?'👍':'')}</span>
             <button class="tagbtn" onclick="fbDel(${f.ts})">✕</button>
           </div>
           <p class="tiny" style="margin-top:6px;line-height:1.5">${(f.correction||f.text||f.aiLine||f.note||'').slice(0,110)}</p>
@@ -2802,17 +2643,6 @@ function matSaveText(){
   if(!x||!x.value.trim()){ toast('Vlož obsah podkladu'); return; }
   matAdd((t&&t.value.trim())||'Podklad bez názvu', x.value.trim());
   toast('Podklad uložen — model s ním počítá ✓'); render(true);
-}
-function runImportGrading(){
-  const x=$('importTxt');
-  if(!x||!x.value.trim()){ toast('Vlož přepis rozhovoru'); return; }
-  runFormReview(x.value.trim(),'import');
-}
-function importTranscriptFile(ev){
-  const file=ev.target.files[0]; if(!file) return;
-  const rd=new FileReader();
-  rd.onload=()=>{ const x=$('importTxt'); if(x) x.value=String(rd.result); runFormReview(String(rd.result),'import'); };
-  rd.readAsText(file);
 }
 function matUpload(ev){
   const file=ev.target.files[0]; if(!file) return;
@@ -2844,7 +2674,7 @@ function matDel(id){ FB.mats=FB.mats.filter(x=>x.id!==id); fbSave(); render(true
 function fbDel(ts){ FB.items=FB.items.filter(x=>x.ts!==ts); fbSave(); render(true); }
 function fbClear(){ if(FB.items.length&&!confirm('Smazat všechnu zpětnou vazbu i podklady?'))return; FB={items:[],mats:[]}; fbSave(); render(true); }
 function fbExport(){
-  const lines=FB.items.map(f=>JSON.stringify({type:f.kind,direction:f.role||'ai-customer',source:f.source||'live',scenario:{uc:f.ucid,persona:f.persona,mood:f.mood,dif:f.dif},context:f.custLine||f.text||'',ai_output:f.aiLine||'',rating:f.rating||null,tags:f.tags||[],trainer_correction:f.correction||f.text||'',note:f.note||'',ts:f.ts,priority:f.priority}));
+  const lines=FB.items.map(f=>JSON.stringify({type:f.kind,scenario:{uc:f.ucid,persona:f.persona,mood:f.mood,dif:f.dif},context:f.custLine||'',ai_output:f.aiLine||'',rating:f.rating||null,tags:f.tags||[],trainer_correction:f.correction||f.text||'',note:f.note||'',ts:f.ts,priority:f.priority}));
   const blob=new Blob([lines.join('\n')],{type:'application/jsonl'});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='field-hero-finetune-dataset.jsonl'; a.click();
   toast('Dataset exportován ('+lines.length+' záznamů)');
@@ -2860,11 +2690,7 @@ function fbImport(ev){
   }catch(e){ toast('Soubor se nepodařilo načíst'); } };
   rd.readAsText(file);
 }
-let CALIB_ROLE='seller', CALIB_PERSONA=null;
-const CALIB_PERSONAS=['Faktický typ','Řešitel problému','Vizionář','Obranný/nedůvěřivý'];
-function toggleCalibRole(r){ CALIB_ROLE=r; render(true); }
-function setCalibPersona(p){ CALIB_PERSONA=CALIB_PERSONA===p?null:p; render(true); }
-function startCalib(){ S.trainerMode=true; RP_FROM_MISSION=false; VR_SCEN=genScenario(S.ucSel); startVoiceRp(CALIB_ROLE); }
+function startCalib(){ S.trainerMode=true; RP_FROM_MISSION=false; VR_SCEN=genScenario(S.ucSel); startVoiceRp(); }
 
 /* ================= ROUTER ================= */
 const VIEWS={
